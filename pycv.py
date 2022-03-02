@@ -4,30 +4,38 @@ import cv2
 from functools import partial
 from cv2 import VideoCapture as BaseVideoCapture, VideoWriter as BaseVideoWriter
 # from cv2 import *
+from itertools import cycle
 
 def _type(img):
     if isinstance(img, list):
         img = np.array(img, 'uint8')
-    assert img.ndim == 3 and img.shape[-1] == 3 or img.ndim == 2, f'Incorrect image shape: {img.shape}' # TODO сравнить условия из scikit-image/matplotlib
-    
-    if isinstance(img, np.ndarray):
-        if img.dtype == np.uint8
-            return img
-        if issubclass(img.dtype.type, np.floating):
-            return img.round().astype('uint8')
-#        if img.max() <= 1:
-        if issubclass(img.dtype.type, np.integer) or img.dtype == np.bool:
-            return img.astype('uint8')
-#        return img.astype('uint8')
-        raise TypeError(f"Unsupported dtype: {img.dtype}")
-    raise TypeError(f"Unsupported type: {type(img)}")
-        
+    if not isinstance(img, np.ndarray):
+        raise TypeError(f"Unsupported type: {type(img)}")
+    assert img.ndim == 3 and img.shape[-1] == 3 or img.ndim == 2, f'Incorrect image shape: {img.shape}'  # TODO сравнить условия из scikit-image/matplotlib
+
+    if img.dtype == np.uint8:
+        return img
+    # if issubclass(img.dtype.type, np.floating):
+        # TODO if img.max() <= 1:
+        # return img.round().astype('uint8')
+    # if issubclass(img.dtype.type, np.integer):
+    if issubclass(img.dtype.type, np.number):
+        return img.astype('uint8')
+    if img.dtype == np.bool:
+        return 255 * img.astype('uint8')
+    raise TypeError(f"Unsupported dtype: {img.dtype}")
+
+# def _type_decorator
+
+RGB = False
 
 # Color Spaces
 
 def rgb(img: np.ndarray):
-    return img[...,::-1]
-    
+    if img.ndim != 3:  # only if 3-color image
+        return img
+    return cv2.cvtColor(img, code=cv2.COLOR_BGR2RGB)
+
 bgr = rgb
 
 bgr2gray = partial(cv2.cvtColor, code=cv2.COLOR_BGR2GRAY)
@@ -42,8 +50,15 @@ hsv2rgb = partial(cv2.cvtColor, code=cv2.COLOR_HSV2RGB)
 
 
 # Reading/Writing
-# TODO imread with type `rgb`, `bgr`, `gray`
-
+def _imread_flag_match(flag):
+    assert flag in ('color', 'gray', 'alpha')
+    if flag == 'color':
+        flag = cv2.IMREAD_COLOR
+    elif flag == 'gray':
+        flag = cv2.IMREAD_GRAYSCALE
+    elif flag == 'alpha':
+        flag = cv2.IMREAD_UNCHANGED
+    return flag
 
 # TODO проверять кириллицу
 def imread(imgp, flag=cv2.IMREAD_COLOR):
@@ -51,89 +66,171 @@ def imread(imgp, flag=cv2.IMREAD_COLOR):
         raise FileNotFoundError(str(imgp))
     if isinstance(imgp, Path):
         imgp = str(imgp)
+    if isinstance(flag, str):
+        flag = _imread_flag_match(flag)
     img = cv2.imread(imgp, flag)
     assert img is not None, f'File was not read: {imgp}'
+    if RGB:
+        img = rgb(img)
     return img
-    
-def imwrite(imgp, img, **kwargs)
+
+
+def imwrite(imgp, img, **kwargs):
     Path(imgp).parent.mkdir(parents=True, exist_ok=True)
     if isinstance(imgp, Path):
         imgp = str(imgp)
-        
+    if RGB:
+        img = rgb(img)
     assert cv2.imwrite(imgp, img), 'Something went wrong'
     
 
-# TODO добавить waitkey и &&    
-# def imshow(window_name, image):
+# TODO window_name increment
+def imshow(to_show, window_name=''):
+    if isinstance(to_show, np.ndarray):
+        to_show = cycle((to_show,))
+    assert hasattr(to_show, '__next__') # isinstance(to_show, types.GeneratorType)
+    for img in to_show:
+        if RGB:
+            img = rgb(img)
+        cv2.imshow(window_name, img)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
     
 # Drawing
+# TODO args to integer
+# TODO take args and parse numbers/tuples/lists
+# TODO color as int/list of int/tuple of int
 def _draw_decorator(func):
-    def wrapper(img, *args, color=255, t=3, copy=False):
+    def wrapper(img, *args, color=255, copy=False, **kwargs):
         img = _type(img)
         if copy:
             img = img.copy()
-        if isinstance(color, np.ndarray): 
+
+        # TODO if 0 < color < 1
+        # color
+        if isinstance(color, np.ndarray):
             color = color.tolist()
-        return func(img, *args, color, t, copy)
+        if isinstance(color, (list, tuple)):
+            color = tuple(map(int, color))
+        else:
+            color = int(color)
+
+        # other kw arguments
+        for k, v in kwargs.items():
+            kwargs[k] = int(v)
+
+        return func(img, *args, color=color, **kwargs)
     return wrapper
 
 
-# TODO type: `xyxy` and `xywh` and `xywh`
-def rectangle(img, x0, y0, x1, y1, color=255, t=3, copy=False):
+# TODO type: `xyxy` and `xywh` and `ccwh`
+@_draw_decorator
+def rectangle(img, x0, y0, x1, y1, color=255, t=3):
     cv2.rectangle(img, (x0, y0), (x1, y1), color, t)
     return img
-    
-def circle(img, x0, y0, r, color=255, t=3, copy=False):
+
+@_draw_decorator
+def circle(img, x0, y0, r, color=255, t=3):
     cv2.circle(img, (x0, y0), r, color, t)
     return img
-    
-def line(img, x0, y0, x1, y1, color=255, t=3, copy=False):
+
+@_draw_decorator
+def point(img, x0, y0, color=255):
+    cv2.circle(img, (x0, y0), 0, color, -1)
+    return img
+
+@_draw_decorator
+def line(img, x0, y0, x1, y1, color=255, t=3):
     cv2.line(img, (x0, y0), (x1, y1), color, t)
     return img
-    
-def hline(img, y, color=255, t=3, copy=False):
+
+@_draw_decorator
+def hline(img, y, color=255, t=3):
     w = img.shape[1]
-    return line(img, 0, y, w, y, color=color, t=t, copy=copy) # TODO kwargs
-    
-def vline(img, x, color=255, t=3, copy=False):
+    cv2.line(img, (0, y), (w, y), color, t)
+    return img
+
+@_draw_decorator
+def vline(img, x, color=255, t=3):
     h = img.shape[0]
-    return line(img, x, 0, x, h, color=color, t=t, copy=copy) # TODO kwargs
+    cv2.line(img, (x, 0), (x, h), color, t)
+    return img
     
+
+@_draw_decorator
+def putText(img, text, x=0, y=-1, font=cv2.FONT_HERSHEY_SIMPLEX, scale=1, color=255, t=3, line_type=cv2.LINE_AA, flip=False):
+    h = img.shape[0]
+    if y == -1:
+        y = h // 2
+    cv2.putText(
+        img,
+        text,
+        (x, y),
+        font,
+        scale,
+        color,
+        t,
+        line_type,
+        flip
+    )
+    return img
+
+text = putText
+
+# Transformations
+
 def vflip(img):
     return cv2.flip(img, 0)
-    
+
+
 def hflip(img):
     return cv2.flip(img, 1)
-    
+
 # diagonal flip
 def dflip(img):
     return cv2.flip(img, -1)
-    
-def text(): # TODO implement
-    pass
-    
-# Transformations
-    
+
+# TODO flags
+def transform(img, angle, scale):
+    img_center = tuple(np.array(img.shape[1::-1]) / 2)
+    rot_mat = cv2.getRotationMatrix2D(img_center, angle, scale)
+    result = cv2.warpAffine(img, rot_mat, img.shape[1::-1], flags=cv2.INTER_LINEAR)
+    return result
+
 def rotate(img, angle):
-  img_center = tuple(np.array(img.shape[1::-1]) / 2)
-  rot_mat = cv2.getRotationMatrix2D(img_center, angle, 1.0)
-  result = cv2.warpAffine(img, rot_mat, img.shape[1::-1], flags=cv2.INTER_LINEAR)
-  return result
-  
-#def shift():
-#    pass
+    return transform(img, angle, 1)
 
+def scale(img, factor):
+    return transform(img, 0, factor)
 
-# def threshold
+def translate(img, x, y):
+    transMat = np.float32([[1, 0, x], [0, 1, y]])
+    dimensions = (img.shape[1], img.shape[0])
+    return cv2.warpAffine(img, transMat, dimensions)
+
+shift = translate
+
+# TODO interpolation
+def resize(img, width, height):
+    return cv2.resize(img, (width, height))
+
+# TODO flags
+def threshold(img: np.ndarray, thr=127, max=255):
+    assert img.ndim == 2, '`img` should be gray image'
+    # TODO if img.max() < 1
+    _, thresh = cv2.threshold(img, thr, max, cv2.THRESH_BINARY)
+    return thresh
 
 # Video
-
+# TODO __enter__ and __exit__
 class VideoCapture(BaseVideoCapture):
   def __init__(self, src):
     if isinstance(src, Path):
         src = str(src)
-    super().__init__(src) # TODO if '0'
+    if src == '0':
+        src = 0
+    super().__init__(src)
     #assert self.isOpened(), f"Video {src} didn't open"
     self.frame_cnt = self.get(cv2.CAP_PROP_FRAME_COUNT)
     self.fps = self.get(cv2.CAP_PROP_FPS)
@@ -144,6 +241,8 @@ class VideoCapture(BaseVideoCapture):
 # TODO Raise an exception if closed?
   def read(self):
       _, frame = super().read()
+      if RGB:
+          frame = rgb(frame)
       return frame
     
   def __iter__(self):
@@ -163,33 +262,41 @@ class VideoCapture(BaseVideoCapture):
     self.i = nframe
     
   def __len__(self):
-    return self.frame_cnt
+      return self.frame_cnt
+
+  def close(self):
+      self.release()
       
 VideoReader = VideoCapture
       
 class VideoWriter(BaseVideoWriter):
     def __init__(self, save_path, fps=30, fourcc=cv2.VideoWriter_fourcc(*'MP4V')):
+        Path(save_path).parent.mkdir(parents=True, exist_ok=True)
         self.save_path = save_path
-        self.out = None
+        self.started = False
         self.width = None
         self.height = None
         self.fps = fps
         self.fourcc = fourcc
         
     def write(self, frame: np.ndarray):
-        if self.out is None:
+        if not self.started:
+            self.started = True
             self.height, self.width = frame.shape[:2]
-            self.out = super().__init__(self.save_path, self.fourcc, self.fps, (self.width, self.height))
+            super().__init__(self.save_path, self.fourcc, self.fps, (self.width, self.height))
         assert self.height, self.width == frame.shape[:2]
-        self.out.write(frame)
+        if RGB:
+            frame = rgb(frame)
+        super().write(frame)
 
-class Video:
-    def __init__(self, path, mode='r', **kwds):
-        assert mode in 'rw'
-        if mode == 'r':
-            base_class = VideoReader
-        elif mode == 'w':
-            base_class = VideoWriter
-            
-        [setattr(self, name, func) for name, func in base_class.__dict__.items() if not name.startswith('__')]
-        base_class.__init__(path, **kwds)
+    def close(self):
+        self.release()
+
+
+def Video(path, mode='r', **kwds):
+    assert mode in 'rw'
+    if mode == 'r':
+        base_class = VideoCapture
+    elif mode == 'w':
+        base_class = VideoWriter
+    return base_class(path, **kwds)

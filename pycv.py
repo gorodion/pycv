@@ -4,6 +4,7 @@ import cv2
 from functools import partial
 from cv2 import VideoCapture as BaseVideoCapture, VideoWriter as BaseVideoWriter
 # from cv2 import *
+from itertools import cycle
 
 def _type(img):
     if isinstance(img, list):
@@ -83,11 +84,23 @@ def imwrite(imgp, img, **kwargs):
     assert cv2.imwrite(imgp, img), 'Something went wrong'
     
 
-# TODO добавить waitkey и &&    
-# def imshow(window_name, image):
+# TODO window_name increment
+def imshow(to_show, window_name=''):
+    if isinstance(to_show, np.ndarray):
+        to_show = cycle((to_show,))
+    assert hasattr(to_show, '__next__') # isinstance(to_show, types.GeneratorType)
+    for img in to_show:
+        if RGB:
+            img = rgb(img)
+        cv2.imshow(window_name, img)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
     
 # Drawing
+# TODO args to integer
+# TODO take args and parse numbers/tuples/lists
+# TODO color as int/list of int/tuple of int
 def _draw_decorator(func):
     def wrapper(img, *args, color=255, copy=False, **kwargs):
         img = _type(img)
@@ -280,18 +293,10 @@ class VideoWriter(BaseVideoWriter):
         self.release()
 
 
-class Video:
-    def __init__(self, path, mode='r', **kwds):
-        assert mode in 'rw'
-        if mode == 'r':
-            base_class = VideoReader
-        elif mode == 'w':
-            base_class = VideoWriter
-            
-        [setattr(self, name, func) for name, func in base_class.__dict__.items() if not name.startswith('__')]
-        base_class.__init__(path, **kwds)
-
-if __name__ == '__main__':
-    img = np.zeros((200, 200), 'uint8')
-    text(img, 'aaaa')
-    imwrite('cba.png', img)
+def Video(path, mode='r', **kwds):
+    assert mode in 'rw'
+    if mode == 'r':
+        base_class = VideoCapture
+    elif mode == 'w':
+        base_class = VideoWriter
+    return base_class(path, **kwds)

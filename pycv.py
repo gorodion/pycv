@@ -4,6 +4,7 @@ import cv2
 from functools import partial
 from cv2 import VideoCapture as BaseVideoCapture, VideoWriter as BaseVideoWriter
 # from cv2 import *
+from itertools import cycle
 
 def _type(img):
     if isinstance(img, list):
@@ -11,7 +12,7 @@ def _type(img):
     assert img.ndim == 3 and img.shape[-1] == 3 or img.ndim == 2, f'Incorrect image shape: {img.shape}' # TODO сравнить условия из scikit-image/matplotlib
     
     if isinstance(img, np.ndarray):
-        if img.dtype == np.uint8
+        if img.dtype == np.uint8:
             return img
         if issubclass(img.dtype.type, np.floating):
             return img.round().astype('uint8')
@@ -54,8 +55,9 @@ def imread(imgp, flag=cv2.IMREAD_COLOR):
     img = cv2.imread(imgp, flag)
     assert img is not None, f'File was not read: {imgp}'
     return img
-    
-def imwrite(imgp, img, **kwargs)
+
+
+def imwrite(imgp, img, **kwargs):
     Path(imgp).parent.mkdir(parents=True, exist_ok=True)
     if isinstance(imgp, Path):
         imgp = str(imgp)
@@ -63,11 +65,20 @@ def imwrite(imgp, img, **kwargs)
     assert cv2.imwrite(imgp, img), 'Something went wrong'
     
 
-# TODO добавить waitkey и &&    
-# def imshow(window_name, image):
+# TODO window_name increment
+def imshow(to_show, window_name=''):
+    if isinstance(to_show, np.ndarray):
+        to_show = cycle((to_show,))
+    assert hasattr(to_show, '__next__') # isinstance(to_show, types.GeneratorType)
+    for img in to_show:
+        cv2.imshow(window_name, img)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
-    
 # Drawing
+# TODO args to integer
+# TODO take args and parse numbers/tuples/lists
+# TODO color as int/list of int/tuple of int
 def _draw_decorator(func):
     def wrapper(img, *args, color=255, t=3, copy=False):
         img = _type(img)
@@ -79,7 +90,7 @@ def _draw_decorator(func):
     return wrapper
 
 
-# TODO type: `xyxy` and `xywh` and `xywh`
+# TODO type: `xyxy` and `xywh` and `ccwh`
 def rectangle(img, x0, y0, x1, y1, color=255, t=3, copy=False):
     cv2.rectangle(img, (x0, y0), (x1, y1), color, t)
     return img
@@ -183,13 +194,10 @@ class VideoWriter(BaseVideoWriter):
         assert self.height, self.width == frame.shape[:2]
         self.out.write(frame)
 
-class Video:
-    def __init__(self, path, mode='r', **kwds):
-        assert mode in 'rw'
-        if mode == 'r':
-            base_class = VideoReader
-        elif mode == 'w':
-            base_class = VideoWriter
-            
-        [setattr(self, name, func) for name, func in base_class.__dict__.items() if not name.startswith('__')]
-        base_class.__init__(path, **kwds)
+def Video(path, mode='r', **kwds):
+    assert mode in 'rw'
+    if mode == 'r':
+        base_class = VideoCapture
+    elif mode == 'w':
+        base_class = VideoWriter
+    return base_class(path, **kwds)

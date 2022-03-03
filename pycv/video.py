@@ -59,13 +59,15 @@ class VideoCapture(BaseVideoCapture):
 
 
 class VideoWriter(BaseVideoWriter):
-    def __init__(self, save_path, fps=30, fourcc=cv2.VideoWriter_fourcc(*'MP4V')):
+    def __init__(self, save_path, fps=options.FPS, fourcc=cv2.VideoWriter_fourcc(*options.FOURCC)):
         Path(save_path).parent.mkdir(parents=True, exist_ok=True)
         self.save_path = save_path
         self.started = False
         self.width = None
         self.height = None
         self.fps = fps
+        if isinstance(fourcc, str):
+            fourcc = cv2.VideoWriter_fourcc(*fourcc)
         self.fourcc = fourcc
 
     def write(self, frame: np.ndarray):

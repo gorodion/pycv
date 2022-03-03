@@ -1,1 +1,5 @@
 RGB = False
+FPS = 30
+FOURCC = 'MP4V'
+THICKNESS = 3
+COLOR = 255

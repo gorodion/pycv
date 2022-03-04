@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 
+from . import options
 
 def _type(img):
     if isinstance(img, list):
@@ -39,13 +40,18 @@ def _imread_flag_match(flag):
 # TODO take args and parse numbers/tuples/lists
 # TODO color as int/list of int/tuple of int
 def _draw_decorator(func):
-    def wrapper(img, *args, color=255, copy=False, **kwargs):
-        img = _type(img)
+    def is_number(obj):
+        return isinstance(obj, (float, np.floating))
+
+    def wrapper(img, *args, color=None, copy=False, **kwargs):
+        # img = _type(img)
         if copy:
             img = img.copy()
 
         # TODO if 0 < color < 1
         # color
+        if color is None:
+            color = options.COLOR
         if isinstance(color, np.ndarray):
             color = color.tolist()
         if isinstance(color, (list, tuple)):
@@ -53,9 +59,15 @@ def _draw_decorator(func):
         else:
             color = int(color)
 
+        if kwargs.get('t') is None:
+            kwargs['t'] = options.THICKNESS
+
         # other kw arguments
         for k, v in kwargs.items():
-            kwargs[k] = int(v)
+            if is_number(v):
+                kwargs[k] = int(v)
+
+        args = (int(arg) if is_number(arg) else arg for arg in args)
 
         return func(img, *args, color=color, **kwargs)
     return wrapper

@@ -5,6 +5,8 @@ import numpy as np
 __all__ = [
     'rgb',
     'bgr',
+    'rgb2bgr',
+    'bgr2rgb',
     'rgb2gray',
     'bgr2gray',
     'rgb2gray',
@@ -21,7 +23,7 @@ def rgb(img: np.ndarray):
     return cv2.cvtColor(img, code=cv2.COLOR_BGR2RGB)
 
 
-bgr = rgb
+rgb2bgr = bgr2rgb = bgr = rgb
 bgr2gray = partial(cv2.cvtColor, code=cv2.COLOR_BGR2GRAY)
 rgb2gray = partial(cv2.cvtColor, code=cv2.COLOR_RGB2GRAY)
 gray2rgb = partial(cv2.cvtColor, code=cv2.COLOR_GRAY2RGB)

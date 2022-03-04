@@ -48,5 +48,7 @@ def imshow(to_show, window_name=''):
         if options.RGB:
             img = rgb(img)
         cv2.imshow(window_name, img)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(0) & 0xFF == ord('q'):
             break
+    cv2.destroyAllWindows()
+    cv2.waitKey(1)

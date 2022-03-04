@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from functools import partial
 
 __all__ = [
     'vflip',
@@ -10,7 +11,14 @@ __all__ = [
     'scale',
     'translate',
     'resize',
-    'shift'
+    'shift',
+    'rotate90',
+    'rotate180',
+    'rotate270',
+    'xtranslate',
+    'xshift',
+    'ytranslate',
+    'yshift'
 ]
 
 def vflip(img):
@@ -47,9 +55,28 @@ def translate(img, x, y):
     return cv2.warpAffine(img, transMat, dimensions)
 
 
+def xtranslate(img, x):
+    return translate(img, x, 0)
+
+
+def ytranslate(img, y):
+    return translate(img, 0, y)
+
+
 # TODO interpolation
 def resize(img, width, height):
+    h, w = img.shape[:2]
+    if 0 <= width <= 1:
+        width *= w
+    if 0 <= height <= 1:
+        height *= h
+    width, height = int(width), int(height)
     return cv2.resize(img, (width, height))
 
 
 shift = translate
+xshift = xtranslate
+yshift = ytranslate
+rotate90 = partial(rotate, angle=90)
+rotate180 = partial(rotate, angle=180)
+rotate270 = partial(rotate, angle=270)

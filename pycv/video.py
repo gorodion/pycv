@@ -13,7 +13,7 @@ __all__ = [
     'Video'
 ]
 
-# TODO __enter__ and __exit__
+# TODO filenotfound
 class VideoCapture(BaseVideoCapture):
     def __init__(self, src):
         if isinstance(src, Path):
@@ -21,16 +21,21 @@ class VideoCapture(BaseVideoCapture):
         if src == '0':
             src = 0
         super().__init__(src)
-        # assert self.isOpened(), f"Video {src} didn't open"
-        self.frame_cnt = self.get(cv2.CAP_PROP_FRAME_COUNT)
-        self.fps = self.get(cv2.CAP_PROP_FPS)
-        self.width = self.get(cv2.CAP_PROP_FRAME_WIDTH)
-        self.height = self.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        assert self.isOpened(), f"Video {src} didn't open"
+        self.frame_cnt = int(self.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.fps = int(self.get(cv2.CAP_PROP_FPS))
+        self.width = int(self.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.height = int(self.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.shape = self.width, self.height
         self.i = 0  # Current frame
 
-    # TODO Raise an exception if closed?
+
     def read(self):
+        assert self.isOpened(), f"Video is closed"
         _, frame = super().read()
+        if frame is None:
+            raise StopIteration('Video has finished')
+        self.i += 1
         if options.RGB:
             frame = rgb(frame)
         return frame
@@ -40,22 +45,27 @@ class VideoCapture(BaseVideoCapture):
 
     def __next__(self):
         frame = self.read()
-        if frame is None:
-            raise StopIteration
-        self.i += 1
         return frame
 
     def rewind(self, nframe):
         assert isinstance(nframe, int) or (isinstance(nframe, float) and nframe.is_integer())
         assert nframe in range(0, len(self))
+        # if 0 <= nframe <= 1:
+
         self.set(cv2.CAP_PROP_POS_FRAMES, nframe)  # TODO what if float
         self.i = nframe
 
     def __len__(self):
         return self.frame_cnt
 
-    def close(self):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
         self.release()
+
+    __getitem__ = rewind
+    close = BaseVideoCapture.release
 
 
 class VideoWriter(BaseVideoWriter):
@@ -70,6 +80,10 @@ class VideoWriter(BaseVideoWriter):
             fourcc = cv2.VideoWriter_fourcc(*fourcc)
         self.fourcc = fourcc
 
+    @property
+    def shape(self):
+        return self.width, self.height
+
     def write(self, frame: np.ndarray):
         if not self.started:
             self.started = True
@@ -80,8 +94,14 @@ class VideoWriter(BaseVideoWriter):
             frame = rgb(frame)
         super().write(frame)
 
-    def close(self):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
         self.release()
+
+    close = BaseVideoWriter.release
+
 
 
 def Video(path, mode='r', **kwds):

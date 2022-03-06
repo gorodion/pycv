@@ -1,9 +1,9 @@
 # pycv: Pythonic OpenCV to speed up your computer vision research
 
 ## Principles
-Solve more important tasks than writing extra code
-You are programming in python, not C++
-OpenCV is not scary
+- Solve more important tasks than writing extra code
+- You are programming in python, not C++
+- OpenCV is not scary
 
 ## Features
 You can get acquainted with the features in [demo.ipynb](https://github.com/gorodion/cv3/blob/main/demo.ipynb)

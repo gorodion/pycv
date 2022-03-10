@@ -6,7 +6,6 @@ import numpy as np
 
 from .color_spaces import rgb
 from . import options
-from ._utils import _imread_flag_match
 
 __all__ = [
     'imread',
@@ -14,7 +13,18 @@ __all__ = [
     'imshow'
 ]
 
-# TODO проверять кириллицу
+
+def _imread_flag_match(flag):
+    assert flag in ('color', 'gray', 'alpha')
+    if flag == 'color':
+        flag = cv2.IMREAD_COLOR
+    elif flag == 'gray':
+        flag = cv2.IMREAD_GRAYSCALE
+    elif flag == 'alpha':
+        flag = cv2.IMREAD_UNCHANGED
+    return flag
+
+
 def imread(imgp, flag=cv2.IMREAD_COLOR):
     if not Path(imgp).is_file():
         raise FileNotFoundError(str(imgp))

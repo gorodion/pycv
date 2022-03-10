@@ -22,10 +22,10 @@ class VideoCapture(BaseVideoCapture):
             src = 0
         super().__init__(src)
         assert self.isOpened(), f"Video {src} didn't open"
-        self.frame_cnt = int(self.get(cv2.CAP_PROP_FRAME_COUNT))
-        self.fps = int(self.get(cv2.CAP_PROP_FPS))
-        self.width = int(self.get(cv2.CAP_PROP_FRAME_WIDTH))
-        self.height = int(self.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.frame_cnt = round(self.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.fps = round(self.get(cv2.CAP_PROP_FPS))
+        self.width = round(self.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.height = round(self.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.shape = self.width, self.height
         self.i = 0  # Current frame
 
@@ -101,7 +101,6 @@ class VideoWriter(BaseVideoWriter):
         self.release()
 
     close = BaseVideoWriter.release
-
 
 
 def Video(path, mode='r', **kwds):

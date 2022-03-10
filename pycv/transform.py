@@ -70,7 +70,7 @@ def resize(img, width, height):
         width *= w
     if 0 <= height <= 1:
         height *= h
-    width, height = int(width), int(height)
+    width, height = round(width), round(height)
     return cv2.resize(img, (width, height))
 
 

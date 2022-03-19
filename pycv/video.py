@@ -13,13 +13,14 @@ __all__ = [
     'Video'
 ]
 
-# TODO filenotfound
 class VideoCapture(BaseVideoCapture):
     def __init__(self, src):
-        if isinstance(src, Path):
-            src = str(src)
         if src == '0':
             src = 0
+        elif isinstance(src, (str, Path)):
+            if not Path(src).is_file():
+                raise FileNotFoundError(str(src))
+            src = str(src)
         super().__init__(src)
         assert self.isOpened(), f"Video {src} didn't open"
         self.frame_cnt = round(self.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -28,7 +29,6 @@ class VideoCapture(BaseVideoCapture):
         self.height = round(self.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.shape = self.width, self.height
         self.i = 0  # Current frame
-
 
     def read(self):
         assert self.isOpened(), f"Video is closed"
@@ -52,7 +52,7 @@ class VideoCapture(BaseVideoCapture):
         assert nframe in range(0, len(self))
         # if 0 <= nframe <= 1:
 
-        self.set(cv2.CAP_PROP_POS_FRAMES, nframe)  # TODO what if float
+        self.set(cv2.CAP_PROP_POS_FRAMES, nframe)
         self.i = nframe
 
     def __len__(self):

@@ -4,6 +4,7 @@ import numpy as np
 
 from . import options
 from .utils import xywh2xyxy, ccwh2xyxy, rel2abs
+from ._utils import type_decorator
 
 __all__ = [
     'rectangle',
@@ -16,7 +17,7 @@ __all__ = [
     'text'
 ]
 
-# TODO relative coordinates
+
 def _draw_decorator(func):
     def is_number(obj):
         return isinstance(obj, (float, np.floating))
@@ -38,8 +39,8 @@ def _draw_decorator(func):
             color = color[::-1]
         return color
 
+    @type_decorator
     def wrapper(img, *args, color=None, copy=False, **kwargs):
-        # img = _type(img)
         if copy:
             img = img.copy()
 

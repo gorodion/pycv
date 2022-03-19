@@ -48,9 +48,8 @@ def imwrite(imgp, img, **kwargs):
     assert cv2.imwrite(imgp, img), 'Something went wrong'
 
 
-# TODO window_name increment
 # TODO list of sources
-def imshow(to_show, window_name=''):
+def imshow(to_show, window_name='noname'):
     if isinstance(to_show, np.ndarray):
         to_show = cycle((to_show,))
     assert hasattr(to_show, '__next__') # isinstance(to_show, types.GeneratorType)

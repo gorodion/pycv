@@ -5,6 +5,7 @@ from cv2 import VideoCapture as BaseVideoCapture, VideoWriter as BaseVideoWriter
 
 from . import options
 from .color_spaces import rgb
+from ._utils import typeit
 
 __all__ = [
     'VideoCapture',
@@ -15,8 +16,8 @@ __all__ = [
 
 class VideoCapture(BaseVideoCapture):
     def __init__(self, src):
-        if src == '0':
-            src = 0
+        if isinstance(src, str) and src.isdecimal():
+            src = int(src)
         elif isinstance(src, (str, Path)):
             if not Path(src).is_file():
                 raise FileNotFoundError(str(src))
@@ -54,6 +55,7 @@ class VideoCapture(BaseVideoCapture):
 
         self.set(cv2.CAP_PROP_POS_FRAMES, nframe)
         self.i = nframe
+        return self
 
     def __len__(self):
         return self.frame_cnt
@@ -92,6 +94,7 @@ class VideoWriter(BaseVideoWriter):
         assert self.height, self.width == frame.shape[:2]
         if options.RGB:
             frame = rgb(frame)
+        frame = typeit(frame)
         super().write(frame)
 
     def __enter__(self):

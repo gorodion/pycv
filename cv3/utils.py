@@ -35,13 +35,8 @@ def rel2abs(*coords, width, height):
     :param height:
     :return:
 
-    Works only if all the coordinates are relative
     '''
     assert len(coords) % 2 == 0
-    if not all(0 <= coord <= 1 for coord in coords): # TODO and float?
-        for coord in coords:
-            yield coord
-        return
     for x, y in zip(*[iter(coords)] * 2):
-        yield x * width
-        yield y * height
+        yield int(x * width)
+        yield int(y * height)

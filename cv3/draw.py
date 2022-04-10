@@ -32,9 +32,9 @@ def _draw_decorator(func):
         if isinstance(color, np.ndarray):
             color = color.tolist()
         if isinstance(color, (list, tuple)):
-            color = tuple(map(round, color))
+            color = tuple(map(int, color))
         else:
-            color = round(color), 0, 0
+            color = int(color), 0, 0
         if options.RGB:
             color = color[::-1]
         return color
@@ -52,9 +52,9 @@ def _draw_decorator(func):
         # other kw arguments
         for k, v in kwargs.items():
             if is_number(v):
-                kwargs[k] = round(v)
+                kwargs[k] = int(v)
 
-        args = (round(arg) if not_relative_number(arg) else arg for arg in args)
+        args = (int(arg) if not_relative_number(arg) else arg for arg in args)
 
         return func(img, *args, color=color, **kwargs)
 
@@ -65,23 +65,26 @@ def _draw_decorator(func):
 @_draw_decorator
 def rectangle(img, x0, y0, x1, y1, mode='xyxy', **kwargs):
     assert mode in ('xyxy', 'xywh', 'ccwh')
+    relative = all(0 <= x <= 1 for x in (x0, y0, x1, y1))
     if mode == 'xywh':
         x0, y0, x1, y1 = xywh2xyxy(x0, y0, x1, y1)
     elif mode == 'ccwh':
         x0, y0, x1, y1 = ccwh2xyxy(x0, y0, x1, y1)
+        if not relative:
+            x0, y0, x1, y1 = map(int, (x0, y0, x1, y1))
 
-    h, w = img.shape[:2] # TODO imshape
-    x0, y0, x1, y1 = rel2abs(x0, y0, x1, y1, width=w, height=h)
-    x0, y0, x1, y1 = map(round, (x0, y0, x1, y1))
+    h, w = img.shape[:2]
+    if relative:
+        x0, y0, x1, y1 = rel2abs(x0, y0, x1, y1, width=w, height=h)
     cv2.rectangle(img, (x0, y0), (x1, y1), kwargs['color'], kwargs['t'])
     return img
 
 
 @_draw_decorator
 def circle(img, x0, y0, r, **kwargs):
-    h, w = img.shape[:2] # TODO imshape
-    x0, y0 = rel2abs(x0, y0, width=w, height=h)
-    x0, y0, r = map(round, (x0, y0, r))
+    h, w = img.shape[:2]
+    if all(0 <= x <= 1 for x in (x0, y0)):
+        x0, y0 = rel2abs(x0, y0, width=w, height=h)
     cv2.circle(img, (x0, y0), r, kwargs['color'], kwargs['t'])
     return img
 
@@ -90,18 +93,18 @@ def circle(img, x0, y0, r, **kwargs):
 def point(img, x0, y0, r=0, **kwargs):
     # if 't' in kwargs:
     #     warnings.warn('Parameter `t` is not used')
-    h, w = img.shape[:2] # TODO imshape
-    x0, y0 = rel2abs(x0, y0, width=w, height=h)
-    x0, y0, r = map(round, (x0, y0, r))
+    h, w = img.shape[:2]
+    if all(0 <= x <= 1 for x in (x0, y0)):
+        x0, y0 = rel2abs(x0, y0, width=w, height=h)
     cv2.circle(img, (x0, y0), r, kwargs['color'], -1)
     return img
 
 
 @_draw_decorator
 def line(img, x0, y0, x1, y1, **kwargs):
-    h, w = img.shape[:2] # TODO imshape
-    x0, y0, x1, y1 = rel2abs(x0, y0, x1, y1, width=w, height=h)
-    x0, y0, x1, y1 = map(round, (x0, y0, x1, y1))
+    h, w = img.shape[:2]
+    if all(0 <= x <= 1 for x in (x0, y0, x1, y1)):
+        x0, y0, x1, y1 = rel2abs(x0, y0, x1, y1, width=w, height=h)
     cv2.line(img, (x0, y0), (x1, y1), kwargs['color'], kwargs['t'])
     return img
 
@@ -109,7 +112,7 @@ def line(img, x0, y0, x1, y1, **kwargs):
 @_draw_decorator
 def hline(img, y, **kwargs):
     h, w = img.shape[:2]
-    y = round(y * h if 0 <= y <= 1 else y)
+    y = int(y * h if 0 <= y <= 1 else y)
     cv2.line(img, (0, y), (w, y), kwargs['color'], kwargs['t'])
     return img
 
@@ -117,7 +120,7 @@ def hline(img, y, **kwargs):
 @_draw_decorator
 def vline(img, x, **kwargs):
     h, w = img.shape[:2]
-    x = round(x * w if 0 <= x <= 1 else x)
+    x = int(x * w if 0 <= x <= 1 else x)
     cv2.line(img, (x, 0), (x, h), kwargs['color'], kwargs['t'])
     return img
 
@@ -127,8 +130,8 @@ def putText(img, text, x=0, y=None, font=cv2.FONT_HERSHEY_SIMPLEX, scale=1, colo
     h, w = img.shape[:2]
     if y is None:
         y = h // 2
-    x, y = rel2abs(x, y, width=w, height=h)
-    x, y = map(round, (x, y))
+    if all(0 <= coord <= 1 for coord in (x, y)):
+        x, y = rel2abs(x, y, width=w, height=h)
     cv2.putText(
         img,
         text,

@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 from functools import partial
 
+from ._utils import type_decorator
+
 __all__ = [
     'vflip',
     'hflip',
@@ -21,19 +23,24 @@ __all__ = [
     'yshift'
 ]
 
+@type_decorator
 def vflip(img):
     return cv2.flip(img, 0)
 
 
+@type_decorator
 def hflip(img):
     return cv2.flip(img, 1)
 
+
 # diagonal flip
+@type_decorator
 def dflip(img):
     return cv2.flip(img, -1)
 
 
 # TODO flags
+@type_decorator
 def transform(img, angle, scale):
     img_center = tuple(np.array(img.shape[1::-1]) / 2)
     rot_mat = cv2.getRotationMatrix2D(img_center, angle, scale)
@@ -41,36 +48,38 @@ def transform(img, angle, scale):
     return result
 
 
+@type_decorator
 def rotate(img, angle):
     return transform(img, angle, 1)
 
-
+@type_decorator
 def scale(img, factor):
     return transform(img, 0, factor)
 
-
+@type_decorator
 def translate(img, x, y):
     transMat = np.float32([[1, 0, x], [0, 1, y]])
     dimensions = (img.shape[1], img.shape[0])
     return cv2.warpAffine(img, transMat, dimensions)
 
-
+@type_decorator
 def xtranslate(img, x):
     return translate(img, x, 0)
 
-
+@type_decorator
 def ytranslate(img, y):
     return translate(img, 0, y)
 
 
 # TODO interpolation
+@type_decorator
 def resize(img, width, height):
     h, w = img.shape[:2]
     if 0 <= width <= 1:
         width *= w
     if 0 <= height <= 1:
         height *= h
-    width, height = round(width), round(height)
+    width, height = int(width), int(height)
     return cv2.resize(img, (width, height))
 
 

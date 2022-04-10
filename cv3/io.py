@@ -6,6 +6,7 @@ import numpy as np
 
 from .color_spaces import rgb
 from . import options
+from ._utils import typeit
 
 __all__ = [
     'imread',
@@ -45,6 +46,7 @@ def imwrite(imgp, img, **kwargs):
         imgp = str(imgp)
     if options.RGB:
         img = rgb(img)
+    img = typeit(img)
     assert cv2.imwrite(imgp, img), 'Something went wrong'
 
 
@@ -56,6 +58,7 @@ def imshow(to_show, window_name='noname'):
     for img in to_show:
         if options.RGB:
             img = rgb(img)
+        img = typeit(img)
         cv2.imshow(window_name, img)
         if cv2.waitKey(0) & 0xFF == ord('q'):
             break

@@ -7,8 +7,8 @@ warnings.simplefilter('always', UserWarning)
 def typeit(img):
     if isinstance(img, np.ndarray) and img.dtype == np.uint8:
         return img
-    warnings.warn('The image was copied because it needs to be cast to the correct type. To avoid copying, please cast the image to np.ndarray with np.uint8 dtype')
-    return np.array(img).astype('uint8')
+    warnings.warn('The image was copied because it needs to be cast to the correct type. To avoid copying, please cast the image to np.uint8')
+    return np.uint8(img)
     # if isinstance(img, list):
     #     img = np.array(img, 'uint8')
     # if not isinstance(img, np.ndarray):
@@ -32,3 +32,6 @@ def type_decorator(func):
         img = typeit(img)
         return func(img, *args, **kwargs)
     return wrapper
+
+def is_relative(*args):
+    return all(0 <= x <= 1 for x in args)

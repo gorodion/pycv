@@ -1,4 +1,4 @@
-from . import options
+from . import opt
 from .color_spaces import *
 from .io import *
 from .draw import *

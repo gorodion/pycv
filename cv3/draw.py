@@ -2,9 +2,9 @@ import cv2
 # import warnings
 import numpy as np
 
-from . import options
+from . import opt
 from .utils import xywh2xyxy, ccwh2xyxy, rel2abs
-from ._utils import type_decorator
+from ._utils import type_decorator, is_relative
 
 __all__ = [
     'rectangle',
@@ -28,14 +28,14 @@ def _draw_decorator(func):
     # TODO if 0 < color < 1
     def process_color(color):
         if color is None:
-            color = options.COLOR
+            color = opt.COLOR
         if isinstance(color, np.ndarray):
             color = color.tolist()
         if isinstance(color, (list, tuple)):
             color = tuple(map(int, color))
         else:
             color = int(color), 0, 0
-        if options.RGB:
+        if opt.RGB:
             color = color[::-1]
         return color
 
@@ -47,7 +47,7 @@ def _draw_decorator(func):
         color = process_color(color)
 
         if kwargs.get('t') is None:
-            kwargs['t'] = options.THICKNESS
+            kwargs['t'] = opt.THICKNESS
 
         # other kw arguments
         for k, v in kwargs.items():
@@ -65,17 +65,17 @@ def _draw_decorator(func):
 @_draw_decorator
 def rectangle(img, x0, y0, x1, y1, mode='xyxy', **kwargs):
     assert mode in ('xyxy', 'xywh', 'ccwh')
-    relative = all(0 <= x <= 1 for x in (x0, y0, x1, y1))
+    relative = is_relative(x0, y0, x1, y1)
     if mode == 'xywh':
         x0, y0, x1, y1 = xywh2xyxy(x0, y0, x1, y1)
     elif mode == 'ccwh':
         x0, y0, x1, y1 = ccwh2xyxy(x0, y0, x1, y1)
-        if not relative:
-            x0, y0, x1, y1 = map(int, (x0, y0, x1, y1))
 
     h, w = img.shape[:2]
     if relative:
         x0, y0, x1, y1 = rel2abs(x0, y0, x1, y1, width=w, height=h)
+    else:
+        x0, y0, x1, y1 = map(int, (x0, y0, x1, y1))
     cv2.rectangle(img, (x0, y0), (x1, y1), kwargs['color'], kwargs['t'])
     return img
 

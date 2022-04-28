@@ -33,5 +33,15 @@ def type_decorator(func):
         return func(img, *args, **kwargs)
     return wrapper
 
+
 def is_relative(*args):
-    return all(0 <= x <= 1 for x in args)
+    return all(0 < x < 1 for x in args)
+
+
+def _relative_check(*args, relative):
+    is_relative_coords = all(0 < x < 1 for x in args)
+    if is_relative_coords and relative is False:
+        warnings.warn('`relative` param set to False but relative args passed')
+    if relative is None:
+        relative = is_relative_coords
+    return relative

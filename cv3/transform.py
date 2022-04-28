@@ -2,7 +2,8 @@ import cv2
 import numpy as np
 from functools import partial
 
-from ._utils import type_decorator
+from ._utils import type_decorator, _relative_check
+from .utils import rel2abs
 
 __all__ = [
     'vflip',
@@ -73,13 +74,14 @@ def ytranslate(img, y):
 
 # TODO interpolation
 @type_decorator
-def resize(img, width, height):
-    h, w = img.shape[:2]
-    if 0 <= width <= 1:
-        width *= w
-    if 0 <= height <= 1:
-        height *= h
-    width, height = int(width), int(height)
+def resize(img, width, height, relative=None):
+    if _relative_check(width, height, relative=relative):
+        h, w = img.shape[:2]
+        width, height = rel2abs(width, height, width=w, height=h)
+    else:
+        width, height = map(int, (width, height))
+    if not relative and (width == 0 or height == 0):
+        raise ValueError('Width or height have zero size. Try set `relative` to True')
     return cv2.resize(img, (width, height))
 
 

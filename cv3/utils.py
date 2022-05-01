@@ -30,13 +30,27 @@ def xyxy2ccwh(x0, y0, x1, y1):
 
 def rel2abs(*coords, width, height):
     '''
+    Converts relative coordinates to absolute
     :param coords: iterable (x0, y0, x1, y1, ..., xn, yn)
     :param width:
     :param height:
-    :return:
-
+    :return: iterable
     '''
     assert len(coords) % 2 == 0
     for x, y in zip(*[iter(coords)] * 2):
         yield int(x * width)
         yield int(y * height)
+
+
+def abs2rel(*coords, width, height):
+    '''
+    Converts absolute coordinates to relative
+    :param coords: iterable (x0, y0, x1, y1, ..., xn, yn)
+    :param width:
+    :param height:
+    :return: iterable
+    '''
+    assert len(coords) % 2 == 0
+    for x, y in zip(*[iter(coords)] * 2):
+        yield x / width
+        yield y / height

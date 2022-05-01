@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 from cv2 import VideoCapture as BaseVideoCapture, VideoWriter as BaseVideoWriter
 
-from . import options
+from . import opt
 from .color_spaces import rgb
 from ._utils import typeit
 
@@ -29,15 +29,17 @@ class VideoCapture(BaseVideoCapture):
         self.width = round(self.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.height = round(self.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.shape = self.width, self.height
-        self.i = 0  # Current frame
+
+    @property
+    def now(self):  # current frame
+        return round(self.get(cv2.CAP_PROP_POS_FRAMES))
 
     def read(self):
         assert self.isOpened(), f"Video is closed"
         _, frame = super().read()
         if frame is None:
             raise StopIteration('Video has finished')
-        self.i += 1
-        if options.RGB:
+        if opt.RGB:
             frame = rgb(frame)
         return frame
 
@@ -54,7 +56,6 @@ class VideoCapture(BaseVideoCapture):
         # if 0 <= nframe <= 1:
 
         self.set(cv2.CAP_PROP_POS_FRAMES, nframe)
-        self.i = nframe
         return self
 
     def __len__(self):
@@ -71,28 +72,28 @@ class VideoCapture(BaseVideoCapture):
 
 
 class VideoWriter(BaseVideoWriter):
-    def __init__(self, save_path, fps=options.FPS, fourcc=cv2.VideoWriter_fourcc(*options.FOURCC)):
+    def __init__(self, save_path, fps=None, fourcc=None):
         Path(save_path).parent.mkdir(parents=True, exist_ok=True)
         self.save_path = save_path
         self.started = False
         self.width = None
         self.height = None
-        self.fps = fps
+        self.fps = fps or opt.FPS
         if isinstance(fourcc, str):
             fourcc = cv2.VideoWriter_fourcc(*fourcc)
-        self.fourcc = fourcc
+        self.fourcc = fourcc or opt.FOURCC
 
     @property
     def shape(self):
         return self.width, self.height
 
-    def write(self, frame: np.ndarray):
+    def write(self, frame: np.ndarray): # TODO throw if closed
         if not self.started:
             self.started = True
             self.height, self.width = frame.shape[:2]
             super().__init__(self.save_path, self.fourcc, self.fps, (self.width, self.height))
-        assert self.height, self.width == frame.shape[:2]
-        if options.RGB:
+        assert (self.height, self.width) == frame.shape[:2], f'Shape mismatch. Required: {self.shape}'
+        if opt.RGB:
             frame = rgb(frame)
         frame = typeit(frame)
         super().write(frame)

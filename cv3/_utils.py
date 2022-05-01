@@ -1,14 +1,17 @@
 import warnings
 import numpy as np
 
+from . import opt
+from .utils import rel2abs
+
 warnings.simplefilter('always', UserWarning)
 
 
 def typeit(img):
     if isinstance(img, np.ndarray) and img.dtype == np.uint8:
         return img
-    warnings.warn('The image was copied because it needs to be cast to the correct type. To avoid copying, please cast the image to np.ndarray with np.uint8 dtype')
-    return np.array(img).astype('uint8')
+    warnings.warn('The image was copied because it needs to be cast to the correct type. To avoid copying, please cast the image to np.uint8')
+    return np.uint8(img)
     # if isinstance(img, list):
     #     img = np.array(img, 'uint8')
     # if not isinstance(img, np.ndarray):
@@ -32,3 +35,38 @@ def type_decorator(func):
         img = typeit(img)
         return func(img, *args, **kwargs)
     return wrapper
+
+
+# TODO if 0 < color < 1
+def _process_color(color):
+    if color is None:
+        color = opt.COLOR
+    if isinstance(color, np.ndarray):
+        color = color.tolist()
+    if isinstance(color, (list, tuple)):
+        color = tuple(map(int, color))
+    else:
+        return int(color)
+    # if opt.RGB:
+    #     color = color[::-1]
+    return color
+
+
+def is_relative(*args):
+    return all(0 < x < 1 for x in args)
+
+
+def _relative_check(*args, relative):
+    is_relative_coords = all(0 < x < 1 for x in args)
+    if is_relative_coords and relative is False:
+        warnings.warn('`relative` param set to False but relative args passed')
+    if relative is None:
+        relative = is_relative_coords
+    return relative
+
+
+def _relative_handle(img, *args, relative):
+    if _relative_check(*args, relative=relative):
+        h, w = img.shape[:2]
+        return tuple(rel2abs(*args, width=w, height=h))
+    return tuple(map(int, args))

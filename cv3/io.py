@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 
 from .color_spaces import rgb
-from . import options
+from . import opt
 from ._utils import typeit
 
 __all__ = [
@@ -35,7 +35,7 @@ def imread(imgp, flag=cv2.IMREAD_COLOR):
         flag = _imread_flag_match(flag)
     img = cv2.imread(imgp, flag)
     assert img is not None, f'File was not read: {imgp}'
-    if options.RGB:
+    if opt.RGB:
         img = rgb(img)
     return img
 
@@ -44,7 +44,7 @@ def imwrite(imgp, img, **kwargs):
     Path(imgp).parent.mkdir(parents=True, exist_ok=True)
     if isinstance(imgp, Path):
         imgp = str(imgp)
-    if options.RGB:
+    if opt.RGB:
         img = rgb(img)
     img = typeit(img)
     assert cv2.imwrite(imgp, img), 'Something went wrong'
@@ -56,7 +56,7 @@ def imshow(to_show, window_name='noname'):
         to_show = cycle((to_show,))
     assert hasattr(to_show, '__next__') # isinstance(to_show, types.GeneratorType)
     for img in to_show:
-        if options.RGB:
+        if opt.RGB:
             img = rgb(img)
         img = typeit(img)
         cv2.imshow(window_name, img)

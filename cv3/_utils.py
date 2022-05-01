@@ -1,6 +1,9 @@
 import warnings
 import numpy as np
 
+from . import opt
+from .utils import rel2abs
+
 warnings.simplefilter('always', UserWarning)
 
 
@@ -34,6 +37,21 @@ def type_decorator(func):
     return wrapper
 
 
+# TODO if 0 < color < 1
+def _process_color(color):
+    if color is None:
+        color = opt.COLOR
+    if isinstance(color, np.ndarray):
+        color = color.tolist()
+    if isinstance(color, (list, tuple)):
+        color = tuple(map(int, color))
+    else:
+        return int(color)
+    # if opt.RGB:
+    #     color = color[::-1]
+    return color
+
+
 def is_relative(*args):
     return all(0 < x < 1 for x in args)
 
@@ -45,3 +63,10 @@ def _relative_check(*args, relative):
     if relative is None:
         relative = is_relative_coords
     return relative
+
+
+def _relative_handle(img, *args, relative):
+    if _relative_check(*args, relative=relative):
+        h, w = img.shape[:2]
+        return tuple(rel2abs(*args, width=w, height=h))
+    return tuple(map(int, args))

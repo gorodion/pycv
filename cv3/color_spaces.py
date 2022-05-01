@@ -19,19 +19,18 @@ __all__ = [
     'hsv2rgb',
 ]
 
+
 @type_decorator
-def rgb(img: np.ndarray):
-    if img.ndim != 3:  # only if 3-color image
-        return img
-    return cv2.cvtColor(img, code=cv2.COLOR_BGR2RGB)
+def _cvtColor(img, code):
+    if code == cv2.COLOR_GRAY2RGB:
+        assert img.ndim == 2, 'Image should be grayscale (2 dims)'
+    return cv2.cvtColor(img, code=code)
 
 
-_cvtColor = type_decorator(cv2.cvtColor)
-rgb2bgr = bgr2rgb = bgr = rgb
+rgb2bgr = bgr2rgb = bgr = rgb = partial(_cvtColor, code=cv2.COLOR_RGB2BGR)
+gray2rgb = gray2bgr = partial(_cvtColor, code=cv2.COLOR_GRAY2RGB)
 bgr2gray = partial(_cvtColor, code=cv2.COLOR_BGR2GRAY)
 rgb2gray = partial(_cvtColor, code=cv2.COLOR_RGB2GRAY)
-gray2rgb = partial(_cvtColor, code=cv2.COLOR_GRAY2RGB)
-gray2bgr = partial(_cvtColor, code=cv2.COLOR_GRAY2BGR)
 bgr2hsv = partial(_cvtColor, code=cv2.COLOR_BGR2HSV)
 rgb2hsv = partial(_cvtColor, code=cv2.COLOR_RGB2HSV)
 hsv2bgr = partial(_cvtColor, code=cv2.COLOR_HSV2BGR)

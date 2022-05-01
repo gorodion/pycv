@@ -72,22 +72,22 @@ class VideoCapture(BaseVideoCapture):
 
 
 class VideoWriter(BaseVideoWriter):
-    def __init__(self, save_path, fps=opt.FPS, fourcc=cv2.VideoWriter_fourcc(*opt.FOURCC)):  # TODO Nones
+    def __init__(self, save_path, fps=None, fourcc=None):
         Path(save_path).parent.mkdir(parents=True, exist_ok=True)
         self.save_path = save_path
         self.started = False
         self.width = None
         self.height = None
-        self.fps = fps
+        self.fps = fps or opt.FPS
         if isinstance(fourcc, str):
             fourcc = cv2.VideoWriter_fourcc(*fourcc)
-        self.fourcc = fourcc
+        self.fourcc = fourcc or opt.FOURCC
 
     @property
     def shape(self):
         return self.width, self.height
 
-    def write(self, frame: np.ndarray):
+    def write(self, frame: np.ndarray): # TODO throw if closed
         if not self.started:
             self.started = True
             self.height, self.width = frame.shape[:2]

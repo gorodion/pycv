@@ -11,7 +11,8 @@ from ._utils import typeit
 __all__ = [
     'imread',
     'imwrite',
-    'imshow'
+    'imshow',
+    'Demonstrator'
 ]
 
 
@@ -64,3 +65,22 @@ def imshow(to_show, window_name='noname'):
             break
     cv2.destroyAllWindows()
     cv2.waitKey(1)
+
+
+class Demonstrator:
+    def __init__(self, window_name='demonstrator', flag=cv2.WINDOW_AUTOSIZE):
+        self.window_name = window_name
+        cv2.namedWindow(window_name, flag)
+        
+    def imshow(self, img):
+        if opt.RGB:
+            img = rgb(img)
+        img = typeit(img)
+        cv2.imshow(self.window_name, img)
+        
+    def __enter__(self):
+        return self
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        cv2.destroyWindow(self.window_name)
+       

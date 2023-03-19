@@ -14,7 +14,34 @@ __all__ = [
     'Video'
 ]
 
-class VideoCapture(BaseVideoCapture):
+
+class VideoInterface:
+    stream = None
+
+    def isOpened(self):
+        if self.stream is None:
+            return False
+        return self.stream.isOpened()
+
+    @property
+    def is_opened(self):
+        return self.isOpened()
+
+    def release(self):
+        if self.stream is None:
+            raise ValueError('Stream not started')
+        self.stream.release()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.release()
+
+    close = release
+
+
+class VideoCapture(VideoInterface):
     def __init__(self, src):
         if isinstance(src, str) and src.isdecimal():
             src = int(src)
@@ -22,21 +49,21 @@ class VideoCapture(BaseVideoCapture):
             if not Path(src).is_file():
                 raise FileNotFoundError(str(src))
             src = str(src)
-        super().__init__(src)
-        assert self.isOpened(), f"Video {src} didn't open"
-        self.frame_cnt = round(self.get(cv2.CAP_PROP_FRAME_COUNT))
-        self.fps = round(self.get(cv2.CAP_PROP_FPS))
-        self.width = round(self.get(cv2.CAP_PROP_FRAME_WIDTH))
-        self.height = round(self.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.stream = BaseVideoCapture(src)
+        assert self.is_opened, f"Video {src} didn't open"
+        self.frame_cnt = round(self.stream.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.fps = round(self.stream.get(cv2.CAP_PROP_FPS))
+        self.width = round(self.stream.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.height = round(self.stream.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.shape = self.width, self.height
 
     @property
     def now(self):  # current frame
-        return round(self.get(cv2.CAP_PROP_POS_FRAMES))
+        return round(self.stream.get(cv2.CAP_PROP_POS_FRAMES))
 
     def read(self):
-        assert self.isOpened(), f"Video is closed"
-        _, frame = super().read()
+        assert self.is_opened, f"Video is closed"
+        _, frame = self.stream.read()
         if frame is None:
             raise StopIteration('Video has finished')
         if opt.RGB:
@@ -54,57 +81,44 @@ class VideoCapture(BaseVideoCapture):
         assert isinstance(nframe, int) or (isinstance(nframe, float) and nframe.is_integer())
         assert nframe in range(0, len(self))
         # if 0 <= nframe <= 1:
-
-        self.set(cv2.CAP_PROP_POS_FRAMES, nframe)
+        self.stream.set(cv2.CAP_PROP_POS_FRAMES, nframe)
         return self
 
     def __len__(self):
         return self.frame_cnt
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.release()
-
-    __getitem__ = rewind
-    close = BaseVideoCapture.release
+    def __getitem__(self, idx):
+        self.rewind(idx)
+        frame = self.read()
+        return frame
 
 
-class VideoWriter(BaseVideoWriter):
+class VideoWriter(VideoInterface):
     def __init__(self, save_path, fps=None, fourcc=None):
         Path(save_path).parent.mkdir(parents=True, exist_ok=True)
         self.save_path = save_path
-        self.started = False
         self.width = None
         self.height = None
         self.fps = fps or opt.FPS
         if isinstance(fourcc, str):
             fourcc = cv2.VideoWriter_fourcc(*fourcc)
         self.fourcc = fourcc or opt.FOURCC
+        self.stream = None
 
     @property
     def shape(self):
         return self.width, self.height
 
-    def write(self, frame: np.ndarray): # TODO throw if closed
-        if not self.started:
-            self.started = True
+    def write(self, frame: np.ndarray):
+        frame = typeit(frame)
+        if self.stream is None:
             self.height, self.width = frame.shape[:2]
-            super().__init__(self.save_path, self.fourcc, self.fps, (self.width, self.height))
+            self.stream = BaseVideoWriter(self.save_path, self.fourcc, self.fps, (self.width, self.height))
+        assert self.is_opened, f"Stream is closed"
         assert (self.height, self.width) == frame.shape[:2], f'Shape mismatch. Required: {self.shape}'
         if opt.RGB:
             frame = rgb(frame)
-        frame = typeit(frame)
-        super().write(frame)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.release()
-
-    close = BaseVideoWriter.release
+        self.stream.write(frame)
 
 
 def Video(path, mode='r', **kwds):

@@ -6,12 +6,13 @@ import numpy as np
 
 from .color_spaces import rgb
 from . import opt
-from ._utils import typeit
+from ._utils import typeit, type_decorator
 
 __all__ = [
     'imread',
     'imwrite',
-    'imshow'
+    'imshow',
+    'Window'
 ]
 
 
@@ -45,22 +46,57 @@ def imwrite(imgp, img, **kwargs):
     if isinstance(imgp, Path):
         imgp = str(imgp)
     if opt.RGB:
-        img = rgb(img)
-    img = typeit(img)
+        img = rgb(img)  # includes typeit
+    else:
+        img = typeit(img)
     assert cv2.imwrite(imgp, img), 'Something went wrong'
 
 
-# TODO list of sources
-def imshow(to_show, window_name='noname'):
-    if isinstance(to_show, np.ndarray):
-        to_show = cycle((to_show,))
-    assert hasattr(to_show, '__next__') # isinstance(to_show, types.GeneratorType)
-    for img in to_show:
+def imshow(window_name, img):
+    if opt.RGB:
+        img = rgb(img)
+    else:
+        img = typeit(img)
+    cv2.imshow(window_name, img)
+
+
+class Window:
+    __window_count = 0
+
+    def __init__(self, window_name=None, pos=None, flag=cv2.WINDOW_AUTOSIZE):
+        """
+
+        :param window_name:
+        :param pos: tuple. Starting position of the window (x, y)
+        :param flag:
+        """
+        if window_name is None:
+            window_name = f'window{Window.__window_count}'
+            Window.__window_count += 1
+
+        self.window_name = window_name
+        cv2.namedWindow(window_name, flag)
+
+        if pos is not None:
+            cv2.moveWindow(window_name, *pos)
+
+    def imshow(self, img):
         if opt.RGB:
             img = rgb(img)
-        img = typeit(img)
-        cv2.imshow(window_name, img)
-        if cv2.waitKey(0) & 0xFF == ord('q'):
-            break
-    cv2.destroyAllWindows()
-    cv2.waitKey(1)
+        else:
+            img = typeit(img)
+        cv2.imshow(self.window_name, img)
+
+    def close(self):
+        cv2.destroyWindow(self.window_name)
+
+    def wait_key(self, t):
+        return cv2.waitKey(t) & 0xFF
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    waitKey = wait_key

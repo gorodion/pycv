@@ -1,6 +1,7 @@
 import cv2
 import warnings
 import numpy as np
+from typing import List
 
 from . import opt
 from .utils import xywh2xyxy, ccwh2xyxy, rel2abs
@@ -8,13 +9,16 @@ from ._utils import type_decorator, _relative_check, _relative_handle, _process_
 
 __all__ = [
     'rectangle',
+    'polylines',
     'circle',
     'point',
+    'points',
     'line',
     'hline',
     'vline',
     'putText',
-    'text'
+    'text',
+    'rectangles',
 ]
 
 
@@ -64,13 +68,28 @@ def rectangle(img, x0, y0, x1, y1, mode='xyxy', relative=None, **kwargs):
 
 
 @_draw_decorator
+def polylines(img, pts, is_closed=True, relative=None, **kwargs):
+    """
+    :param img:
+    :param pts: np.array or List[List] ot Tuple[Tuple]
+    :param is_closed: bool
+    :return:
+    """
+    pts = np.array(pts).reshape(-1)
+    pts = _relative_handle(img, *pts, relative=relative)
+    pts = np.int32(pts).reshape(-1, 1, 2)
+    cv2.polylines(img, [pts], is_closed, kwargs['color'], kwargs['t'])
+    return img
+
+
+@_draw_decorator
 def circle(img, x0, y0, r, relative=None, **kwargs):
     x0, y0 = _relative_handle(img, x0, y0, relative=relative)
     cv2.circle(img, (x0, y0), r, kwargs['color'], kwargs['t'])
     return img
 
 
-def point(img, x0, y0, r=0, relative=None, **kwargs):
+def point(img, x0, y0, r=1, relative=None, **kwargs):
     if 't' in kwargs:
         kwargs.pop('t')
         warnings.warn('Parameter `t` is not used')
@@ -121,5 +140,18 @@ def putText(img, text, x=0.5, y=0.5, font=cv2.FONT_HERSHEY_SIMPLEX, scale=1, col
     )
     return img
 
+
+@type_decorator
+def rectangles(img: np.array, rects: List[List], **kwargs) -> np.array:
+    for rect in rects:
+        img = rectangle(img, *rect, **kwargs)
+    return img
+
+
+@type_decorator
+def points(img: np.array, pts: List[List], **kwargs) -> np.array:
+    for pt in pts:
+        img = point(img, *pt, **kwargs)
+    return img
 
 text = putText

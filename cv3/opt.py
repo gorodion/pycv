@@ -37,7 +37,7 @@ def draw(thickness=None, color=None, font=None, pt_radius=None, scale=None, line
         assert isinstance(thickness, (int, np.unsignedinteger)), 'default thickness must be positive integer'
         THICKNESS = thickness
     if color is not None:
-        assert isinstance(color, (int, float, np.unsignedinteger, np.floating, np.ndarray, list, tuple))
+        assert isinstance(color, (str, int, float, np.unsignedinteger, np.floating, np.ndarray, list, tuple))
         COLOR = color
     if font is not None:
         # TODO asserts flags

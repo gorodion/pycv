@@ -52,21 +52,17 @@ def _process_color(color):
     return color
 
 
-def is_relative(*args):
-    return all(0 < x < 1 for x in args)
+def _relative_check(*args, rel):
+    is_relative_coords = all(0 <= abs(x) <= 1 and isinstance(x, (float, np.floating)) for x in args)
+    if is_relative_coords and rel is False:
+        warnings.warn('`rel` param set to False but relative args passed')
+    if rel is None:
+        rel = is_relative_coords
+    return rel
 
 
-def _relative_check(*args, relative):
-    is_relative_coords = all(0 < x < 1 for x in args)
-    if is_relative_coords and relative is False:
-        warnings.warn('`relative` param set to False but relative args passed')
-    if relative is None:
-        relative = is_relative_coords
-    return relative
-
-
-def _relative_handle(img, *args, relative):
-    if _relative_check(*args, relative=relative):
+def _relative_handle(img, *args, rel):
+    if _relative_check(*args, rel=rel):
         h, w = img.shape[:2]
         return tuple(rel2abs(*args, width=w, height=h))
     return tuple(map(int, args))

@@ -117,22 +117,22 @@ def ytranslate(img, y):
 
 
 @type_decorator
-def resize(img, width, height, interpolation=cv2.INTER_LINEAR, relative=None):
+def resize(img, width, height, interpolation=cv2.INTER_LINEAR, rel=None):
     if isinstance(interpolation, str):
         interpolation = _inter_flag_match(interpolation)
-    width, height = _relative_handle(img, width, height, relative=relative)
-    if not relative and (width == 0 or height == 0):
-        raise ValueError('Width or height have zero size. Try set `relative` to True')
+    width, height = _relative_handle(img, width, height, rel=rel)
+    if not rel and (width == 0 or height == 0):
+        raise ValueError('Width or height have zero size. Try set `rel` to True')
     return cv2.resize(img, (width, height), interpolation=interpolation)
 
 
 @type_decorator
-def crop(img, x0, y0, x1, y1, mode='xyxy', relative=None):
+def crop(img, x0, y0, x1, y1, mode='xyxy', rel=None):
     """
     Returns copied crop of the image
     """
     x0, y0, x1, y1 = _handle_rect_mode(mode, x0, y0, x1, y1)
-    x0, y0, x1, y1 = _relative_handle(img, x0, y0, x1, y1, relative=relative)
+    x0, y0, x1, y1 = _relative_handle(img, x0, y0, x1, y1, rel=rel)
 
     x0 = max(x0, 0)
     y0 = max(y0, 0)
@@ -140,9 +140,9 @@ def crop(img, x0, y0, x1, y1, mode='xyxy', relative=None):
 
 
 @type_decorator
-def copyMakeBorder(img, y0, y1, x0, x1, border=cv2.BORDER_CONSTANT, value=None, relative=None):
+def copyMakeBorder(img, y0, y1, x0, x1, border=cv2.BORDER_CONSTANT, value=None, rel=None):
     border, value = _border_value_check(border, value)
-    x0, y0, x1, y1 = _relative_handle(img, x0, y0, x1, y1, relative=relative)
+    x0, y0, x1, y1 = _relative_handle(img, x0, y0, x1, y1, rel=rel)
     return cv2.copyMakeBorder(img, y0, y1, x0, x1, borderType=border, dst=None, value=value)
 
 

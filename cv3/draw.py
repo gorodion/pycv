@@ -44,24 +44,23 @@ def _draw_decorator(func):
             if is_number(v):
                 kwargs[k] = int(v)
 
-        args = (int(arg) if not_relative_number(arg) else arg for arg in args) # TODO for relative > 1
-
         return func(img, *args, color=color, **kwargs)
 
     return wrapper
 
 # TODO filled=False
 @_draw_decorator
-def rectangle(img, x0, y0, x1, y1, mode='xyxy', relative=None, **kwargs):
+def rectangle(img, x0, y0, x1, y1, mode='xyxy', rel=None, **kwargs):
+    rel = _relative_check(x0, y0, x1, y1, rel=rel)  # for 'xywh' and 'ccwh' modes
     x0, y0, x1, y1 = _handle_rect_mode(mode, x0, y0, x1, y1)
-    x0, y0, x1, y1 = _relative_handle(img, x0, y0, x1, y1, relative=relative)
+    x0, y0, x1, y1 = _relative_handle(img, x0, y0, x1, y1, rel=rel)
 
     cv2.rectangle(img, (x0, y0), (x1, y1), kwargs['color'], kwargs['t'])
     return img
 
 
 @_draw_decorator
-def polylines(img, pts, is_closed=True, relative=None, **kwargs):
+def polylines(img, pts, is_closed=True, rel=None, **kwargs):
     """
     :param img:
     :param pts: np.array or List[List] ot Tuple[Tuple]
@@ -69,24 +68,24 @@ def polylines(img, pts, is_closed=True, relative=None, **kwargs):
     :return:
     """
     pts = np.array(pts).reshape(-1)
-    pts = _relative_handle(img, *pts, relative=relative)
+    pts = _relative_handle(img, *pts, rel=rel)
     pts = np.int32(pts).reshape(-1, 1, 2)
     cv2.polylines(img, [pts], is_closed, kwargs['color'], kwargs['t'])
     return img
 
 
 @_draw_decorator
-def circle(img, x0, y0, r, relative=None, **kwargs):
-    x0, y0 = _relative_handle(img, x0, y0, relative=relative)
+def circle(img, x0, y0, r, rel=None, **kwargs):
+    x0, y0 = _relative_handle(img, x0, y0, rel=rel)
     cv2.circle(img, (x0, y0), r, kwargs['color'], kwargs['t'])
     return img
 
 
-def point(img, x0, y0, r=1, relative=None, **kwargs):
+def point(img, x0, y0, r=1, rel=None, **kwargs):
     if 't' in kwargs:
         kwargs.pop('t')
         warnings.warn('Parameter `t` is not used')
-    return circle(img, x0, y0, r, t=-1, relative=relative, **kwargs)
+    return circle(img, x0, y0, r, t=-1, rel=rel, **kwargs)
     # h, w = img.shape[:2]
     # if all(0 <= x <= 1 for x in (x0, y0)):
     #     x0, y0 = rel2abs(x0, y0, width=w, height=h)
@@ -95,31 +94,31 @@ def point(img, x0, y0, r=1, relative=None, **kwargs):
 
 
 @_draw_decorator
-def line(img, x0, y0, x1, y1, relative=None, **kwargs):
-    x0, y0, x1, y1 = _relative_handle(img, x0, y0, x1, y1, relative=relative)
+def line(img, x0, y0, x1, y1, rel=None, **kwargs):
+    x0, y0, x1, y1 = _relative_handle(img, x0, y0, x1, y1, rel=rel)
     cv2.line(img, (x0, y0), (x1, y1), kwargs['color'], kwargs['t'])
     return img
 
 
 @_draw_decorator
-def hline(img, y, relative=None, **kwargs):
+def hline(img, y, rel=None, **kwargs):
     h, w = img.shape[:2]
-    y = int(y * h if _relative_check(y, relative=relative) else y)
+    y = int(y * h if _relative_check(y, rel=rel) else y)
     cv2.line(img, (0, y), (w, y), kwargs['color'], kwargs['t'])
     return img
 
 
 @_draw_decorator
-def vline(img, x, relative=None, **kwargs):
+def vline(img, x, rel=None, **kwargs):
     h, w = img.shape[:2]
-    x = int(x * w if _relative_check(x, relative=relative) else x)
+    x = int(x * w if _relative_check(x, rel=rel) else x)
     cv2.line(img, (x, 0), (x, h), kwargs['color'], kwargs['t'])
     return img
 
 
 @_draw_decorator
-def putText(img, text, x=0.5, y=0.5, font=cv2.FONT_HERSHEY_SIMPLEX, scale=1, color=None, t=None, line_type=cv2.LINE_AA, flip=False, relative=None):
-    x, y = _relative_handle(img, x, y, relative=relative)
+def putText(img, text, x=0.5, y=0.5, font=cv2.FONT_HERSHEY_SIMPLEX, scale=1, color=None, t=None, line_type=cv2.LINE_AA, flip=False, rel=None):
+    x, y = _relative_handle(img, x, y, rel=rel)
     cv2.putText(
         img,
         str(text),

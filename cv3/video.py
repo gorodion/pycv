@@ -2,6 +2,7 @@ from pathlib import Path
 import numpy as np
 import cv2
 from cv2 import VideoCapture as BaseVideoCapture, VideoWriter as BaseVideoWriter
+from typing import Union
 
 from . import opt
 from .color_spaces import rgb
@@ -42,11 +43,11 @@ class VideoInterface:
 
 
 class VideoCapture(VideoInterface):
-    def __init__(self, src):
+    def __init__(self, src: Union[Path, str, int]):
         if isinstance(src, str) and src.isdecimal():
             src = int(src)
-        elif isinstance(src, (str, Path)):
-            if not Path(src).is_file():
+        elif isinstance(src, Path):
+            if not src.is_file():
                 raise FileNotFoundError(str(src))
             src = str(src)
         self.stream = BaseVideoCapture(src)
@@ -100,9 +101,9 @@ class VideoWriter(VideoInterface):
         self.width = None
         self.height = None
         self.fps = fps or opt.FPS
+        self.fourcc = fourcc or opt.FOURCC
         if isinstance(fourcc, str):
             fourcc = cv2.VideoWriter_fourcc(*fourcc)
-        self.fourcc = fourcc or opt.FOURCC
         self.stream = None
 
     @property

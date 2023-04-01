@@ -2,7 +2,7 @@ import cv2
 
 RGB = True
 FPS = 30
-FOURCC = cv2.VideoWriter_fourcc(*'MP4V')
+FOURCC = 'MP4V'
 THICKNESS = 3
 COLOR = 255
 

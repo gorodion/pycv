@@ -28,6 +28,9 @@ def xyxy2ccwh(x0, y0, x1, y1):
     return cx, cy, w, h
 
 
+def yyxx2xyxy(y0, y1, x0, x1):
+    return x0, y0, x1, y1
+
 def rel2abs(*coords, width, height):
     '''
     Converts relative coordinates to absolute

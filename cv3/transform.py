@@ -3,8 +3,8 @@ import numpy as np
 from functools import partial
 import warnings
 
-from ._utils import type_decorator, _relative_handle, _process_color
-
+from ._utils import type_decorator, _relative_handle, _process_color, _handle_rect_mode
+from .utils import xywh2xyxy, ccwh2xyxy, yyxx2xyxy
 
 __all__ = [
     'vflip',
@@ -127,9 +127,16 @@ def resize(img, width, height, interpolation=cv2.INTER_LINEAR, relative=None):
 
 
 @type_decorator
-def crop(img, y0, y1, x0, x1, relative=None):
+def crop(img, x0, y0, x1, y1, mode='xyxy', relative=None):
+    """
+    Returns copied crop of the image
+    """
+    x0, y0, x1, y1 = _handle_rect_mode(mode, x0, y0, x1, y1)
     x0, y0, x1, y1 = _relative_handle(img, x0, y0, x1, y1, relative=relative)
-    return img[y0:y1, x0:x1]
+
+    x0 = max(x0, 0)
+    y0 = max(y0, 0)
+    return img[y0:y1, x0:x1].copy()
 
 
 @type_decorator

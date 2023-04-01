@@ -2,7 +2,7 @@ import warnings
 import numpy as np
 
 from . import opt
-from .utils import rel2abs
+from .utils import rel2abs, xywh2xyxy, ccwh2xyxy, yyxx2xyxy
 
 warnings.simplefilter('always', UserWarning)
 
@@ -70,3 +70,15 @@ def _relative_handle(img, *args, relative):
         h, w = img.shape[:2]
         return tuple(rel2abs(*args, width=w, height=h))
     return tuple(map(int, args))
+
+
+def _handle_rect_mode(mode, x0, y0, x1, y1):
+    assert mode in ('xyxy', 'xywh', 'ccwh', 'yyxx')
+    if mode == 'xyxy':
+        return x0, y0, x1, y1
+    if mode == 'xywh':
+        return xywh2xyxy(x0, y0, x1, y1)
+    if mode == 'ccwh':
+        return ccwh2xyxy(x0, y0, x1, y1)
+    if mode == 'yyxx':
+        return yyxx2xyxy(x0, y0, x1, y1)

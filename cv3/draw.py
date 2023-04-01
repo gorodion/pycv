@@ -5,7 +5,7 @@ from typing import List
 
 from . import opt
 from .utils import xywh2xyxy, ccwh2xyxy, rel2abs
-from ._utils import type_decorator, _relative_check, _relative_handle, _process_color
+from ._utils import type_decorator, _relative_check, _relative_handle, _process_color, _handle_rect_mode
 
 __all__ = [
     'rectangle',
@@ -50,18 +50,11 @@ def _draw_decorator(func):
 
     return wrapper
 
-
 # TODO filled=False
 @_draw_decorator
 def rectangle(img, x0, y0, x1, y1, mode='xyxy', relative=None, **kwargs):
-    assert mode in ('xyxy', 'xywh', 'ccwh')
-
+    x0, y0, x1, y1 = _handle_rect_mode(mode, x0, y0, x1, y1)
     x0, y0, x1, y1 = _relative_handle(img, x0, y0, x1, y1, relative=relative)
-
-    if mode == 'xywh':
-        x0, y0, x1, y1 = xywh2xyxy(x0, y0, x1, y1)
-    elif mode == 'ccwh':
-        x0, y0, x1, y1 = map(int, ccwh2xyxy(x0, y0, x1, y1))
 
     cv2.rectangle(img, (x0, y0), (x1, y1), kwargs['color'], kwargs['t'])
     return img

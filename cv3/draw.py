@@ -23,12 +23,6 @@ __all__ = [
 
 
 def _draw_decorator(func):
-    def is_number(obj):
-        return isinstance(obj, (float, np.floating))
-
-    def not_relative_number(obj):
-         return is_number(obj) and obj >= 1
-
     @type_decorator
     def wrapper(img, *args, color=None, copy=False, **kwargs):
         if copy:
@@ -36,13 +30,7 @@ def _draw_decorator(func):
 
         color = _process_color(color)
 
-        if kwargs.get('t') is None:
-            kwargs['t'] = opt.THICKNESS
-
-        # other kw arguments
-        for k, v in kwargs.items():
-            if is_number(v):
-                kwargs[k] = int(v)
+        kwargs['t'] = kwargs.get('t', opt.THICKNESS)
 
         return func(img, *args, color=color, **kwargs)
 
@@ -81,10 +69,12 @@ def circle(img, x0, y0, r, rel=None, **kwargs):
     return img
 
 
-def point(img, x0, y0, r=1, rel=None, **kwargs):
+def point(img, x0, y0, r=None, rel=None, **kwargs):
     if 't' in kwargs:
         kwargs.pop('t')
         warnings.warn('Parameter `t` is not used')
+    if r != 0:
+        r = r or opt.PT_RADIUS
     return circle(img, x0, y0, r, t=-1, rel=rel, **kwargs)
     # h, w = img.shape[:2]
     # if all(0 <= x <= 1 for x in (x0, y0)):
@@ -117,7 +107,12 @@ def vline(img, x, rel=None, **kwargs):
 
 
 @_draw_decorator
-def putText(img, text, x=0.5, y=0.5, font=cv2.FONT_HERSHEY_SIMPLEX, scale=1, color=None, t=None, line_type=cv2.LINE_AA, flip=False, rel=None):
+def putText(img, text, x=0.5, y=0.5, font=None, scale=None, color=None, t=None, line_type=None, flip=False, rel=None):
+    if font != 0:
+        font = font or opt.FONT
+    scale = scale or opt.SCALE
+    if line_type != 0:
+        line_type = line_type or opt.LINE_TYPE
     x, y = _relative_handle(img, x, y, rel=rel)
     cv2.putText(
         img,

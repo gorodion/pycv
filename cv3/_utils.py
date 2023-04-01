@@ -37,18 +37,24 @@ def type_decorator(func):
     return wrapper
 
 
-# TODO if 0 < color < 1
 def _process_color(color):
     if color is None:
         color = opt.COLOR
-    if isinstance(color, np.ndarray):
-        color = color.tolist()
-    if isinstance(color, (list, tuple)):
-        color = tuple(map(int, color))
-    else:
+    if isinstance(color, (int, np.unsignedinteger)):
         return int(color)
-    # if opt.RGB:
-    #     color = color[::-1]
+    if isinstance(color, (float, np.floating)):
+        assert 0 <= color <= 255, 'if `color` passed as number it should be in range [0, 255]'
+        color = (color, 0., 0.)
+    if isinstance(color, np.ndarray):
+        color = color.ravel().tolist()
+    if isinstance(color, (list, tuple)):
+        if all(0 <= x <= 1 and isinstance(x, (float, np.floating)) for x in color):
+            color = tuple(round(c*255) for c in color)
+        else:
+            assert all(0 <= c <= 255 for c in color), '`color` must be in range [0, 255]'
+            color = tuple(map(round, color))
+    else:
+        raise ValueError('Unexpected type of `color` arg (int, float, np.array, list, tuple supported)')
     return color
 
 

@@ -72,13 +72,14 @@ class Window:
         """
         if window_name is None:
             window_name = f'window{Window.__window_count}'
-            Window.__window_count += 1
 
         self.window_name = window_name
         cv2.namedWindow(window_name, flag)
 
         if pos is not None:
             cv2.moveWindow(window_name, *pos)
+
+        Window.__window_count += 1
 
     def imshow(self, img):
         if opt.RGB:

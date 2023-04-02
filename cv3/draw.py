@@ -4,8 +4,13 @@ import numpy as np
 from typing import List
 
 from . import opt
-from .utils import xywh2xyxy, ccwh2xyxy, rel2abs
-from ._utils import type_decorator, _relative_check, _relative_handle, _process_color, _handle_rect_mode
+from ._utils import (
+    type_decorator,
+    _relative_check,
+    _relative_handle,
+    _process_color,
+    _handle_rect_coords
+)
 
 __all__ = [
     'rectangle',
@@ -39,9 +44,7 @@ def _draw_decorator(func):
 # TODO filled=False
 @_draw_decorator
 def rectangle(img, x0, y0, x1, y1, mode='xyxy', rel=None, **kwargs):
-    rel = _relative_check(x0, y0, x1, y1, rel=rel)  # for 'xywh' and 'ccwh' modes
-    x0, y0, x1, y1 = _handle_rect_mode(mode, x0, y0, x1, y1)
-    x0, y0, x1, y1 = _relative_handle(img, x0, y0, x1, y1, rel=rel)
+    x0, y0, x1, y1 = _handle_rect_coords(img, x0, y0, x1, y1, mode=mode, rel=rel)
 
     cv2.rectangle(img, (x0, y0), (x1, y1), kwargs['color'], kwargs['t'])
     return img
@@ -76,11 +79,6 @@ def point(img, x0, y0, r=None, rel=None, **kwargs):
     if r != 0:
         r = r or opt.PT_RADIUS
     return circle(img, x0, y0, r, t=-1, rel=rel, **kwargs)
-    # h, w = img.shape[:2]
-    # if all(0 <= x <= 1 for x in (x0, y0)):
-    #     x0, y0 = rel2abs(x0, y0, width=w, height=h)
-    # cv2.circle(img, (x0, y0), r, kwargs['color'], -1)
-    # return img
 
 
 @_draw_decorator

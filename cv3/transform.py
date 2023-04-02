@@ -3,7 +3,7 @@ import numpy as np
 from functools import partial
 import warnings
 
-from ._utils import type_decorator, _relative_handle, _process_color, _handle_rect_mode
+from ._utils import type_decorator, _relative_handle, _process_color, _handle_rect_coords
 from .utils import xywh2xyxy, ccwh2xyxy, yyxx2xyxy
 
 __all__ = [
@@ -122,7 +122,7 @@ def resize(img, width, height, interpolation=cv2.INTER_LINEAR, rel=None):
         interpolation = _inter_flag_match(interpolation)
     width, height = _relative_handle(img, width, height, rel=rel)
     if not rel and (width == 0 or height == 0):
-        raise ValueError('Width or height have zero size. Try set `rel` to True')
+        raise ValueError('Width or height have zero size. If relative coords passed set `rel` to True')
     return cv2.resize(img, (width, height), interpolation=interpolation)
 
 
@@ -131,11 +131,16 @@ def crop(img, x0, y0, x1, y1, mode='xyxy', rel=None):
     """
     Returns copied crop of the image
     """
-    x0, y0, x1, y1 = _handle_rect_mode(mode, x0, y0, x1, y1)
-    x0, y0, x1, y1 = _relative_handle(img, x0, y0, x1, y1, rel=rel)
+    x0, y0, x1, y1 = _handle_rect_coords(img, x0, y0, x1, y1, mode=mode, rel=rel)
 
     x0 = max(x0, 0)
     y0 = max(y0, 0)
+
+    if y0 > y1 or x0 > x1:
+        raise ValueError('invalid rectangle coords specified (ymin>ymax or xmin>xmax)')
+
+    if not rel and (y1 == y0 or x1 == x0):
+        warnings.warn('zero-size array. If relative coords passed set `rel` to True')
     return img[y0:y1, x0:x1].copy()
 
 

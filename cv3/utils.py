@@ -29,6 +29,7 @@ def xyxy2ccwh(x0, y0, x1, y1):
 
 
 def yyxx2xyxy(y0, y1, x0, x1):
+    # ¯\_(ツ)_/¯
     return x0, y0, x1, y1
 
 def rel2abs(*coords, width, height):

@@ -79,6 +79,7 @@ def _handle_rect_coords(img, x0, y0, x1, y1, mode='xyxy', rel=None):
     return _relative_handle(img, x0, y0, x1, y1, rel=rel)
 
 
+# https://www.rapidtables.com/web/color/RGB_Color.html
 COLORS_DICT = {
     'maroon': (128, 0, 0),
     'darkred': (139, 0, 0),

@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 import numpy as np
 import cv2
@@ -30,7 +31,7 @@ class VideoInterface:
 
     def release(self):
         if self.stream is None:
-            raise ValueError('Stream not started')
+            raise OSError('Stream not started')
         self.stream.release()
 
     def __enter__(self):
@@ -46,12 +47,15 @@ class VideoCapture(VideoInterface):
     def __init__(self, src: Union[Path, str, int]):
         if isinstance(src, str) and src.isdecimal():
             src = int(src)
+        elif isinstance(src, (str, Path)) and Path(src).is_dir():
+            raise IsADirectoryError(str(src))
         elif isinstance(src, Path):
             if not src.is_file():
                 raise FileNotFoundError(str(src))
             src = str(src)
         self.stream = BaseVideoCapture(src)
-        assert self.is_opened, f"Video {src} didn't open"
+        if not self.is_opened:
+            raise OSError(f"Video from source {src} didn't open")
         self.frame_cnt = round(self.stream.get(cv2.CAP_PROP_FRAME_COUNT))
         self.fps = round(self.stream.get(cv2.CAP_PROP_FPS))
         self.width = round(self.stream.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -60,10 +64,13 @@ class VideoCapture(VideoInterface):
 
     @property
     def now(self):  # current frame
+        if not self.is_opened:
+            raise OSError('Video is closed')
         return round(self.stream.get(cv2.CAP_PROP_POS_FRAMES))
 
     def read(self):
-        assert self.is_opened, f"Video is closed"
+        if not self.is_opened:
+            raise OSError(f"Video is closed")
         _, frame = self.stream.read()
         if frame is None:
             raise StopIteration('Video has finished')
@@ -86,6 +93,8 @@ class VideoCapture(VideoInterface):
         return self
 
     def __len__(self):
+        if self.frame_cnt < 0:
+            return 0
         return self.frame_cnt
 
     def __getitem__(self, idx):
@@ -93,17 +102,23 @@ class VideoCapture(VideoInterface):
         frame = self.read()
         return frame
 
+    imread = read
+
 
 class VideoWriter(VideoInterface):
-    def __init__(self, save_path, fps=None, fourcc=None):
-        Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+    def __init__(self, save_path, fps=None, fourcc=None, mkdir=True):
+        if mkdir:
+            Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+        if isinstance(save_path, Path):
+            save_path = str(save_path)
         self.save_path = save_path
         self.width = None
         self.height = None
         self.fps = fps or opt.FPS
-        self.fourcc = fourcc or opt.FOURCC
+        fourcc = fourcc or opt.FOURCC
         if isinstance(fourcc, str):
             fourcc = cv2.VideoWriter_fourcc(*fourcc)
+        self.fourcc = fourcc
         self.stream = None
 
     @property
@@ -115,20 +130,26 @@ class VideoWriter(VideoInterface):
         if self.stream is None:
             self.height, self.width = frame.shape[:2]
             self.stream = BaseVideoWriter(self.save_path, self.fourcc, self.fps, (self.width, self.height))
-        assert self.is_opened, f"Stream is closed"
+        if not self.is_opened:
+            raise OSError(f"Stream is closed")
         assert (self.height, self.width) == frame.shape[:2], f'Shape mismatch. Required: {self.shape}'
         if opt.RGB:
             frame = rgb(frame)
         self.stream.write(frame)
 
+    imwrite = write
+
 
 def Video(path, mode='r', **kwds):
     assert mode in 'rw'
     if mode == 'r':
-        base_class = VideoCapture
+        if kwds:
+            raise TypeError(
+                "VideoCapture not accepts keyword args. If you need VideoWriter then pass mode='w'"
+            )
+        return VideoCapture(path)
     elif mode == 'w':
-        base_class = VideoWriter
-    return base_class(path, **kwds)
+        return VideoWriter(path, **kwds)
 
 
 VideoReader = VideoCapture

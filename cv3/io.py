@@ -13,8 +13,9 @@ __all__ = [
     'imwrite',
     'imshow',
     'Window',
-    'waitKey',
-    'wait_key'
+    'wait_key', 'waitKey',
+    'destroy_windows', 'destroyAllWindows',
+    'destroy_window', 'destroyWindow'
 ]
 
 
@@ -51,7 +52,7 @@ def imread(imgp, flag=cv2.IMREAD_COLOR):
     return img
 
 
-def imwrite(imgp, img, mkdir=True):
+def imwrite(imgp, img, mkdir=False):
     if mkdir:
         Path(imgp).parent.mkdir(parents=True, exist_ok=True)
     if isinstance(imgp, Path):
@@ -104,6 +105,9 @@ class Window:
             img = typeit(img)
         cv2.imshow(self.window_name, img)
 
+    def move(self, x, y):
+        cv2.moveWindow(self.window_name, x, y)
+
     def close(self):
         cv2.destroyWindow(self.window_name)
 
@@ -119,3 +123,6 @@ class Window:
 
 
 waitKey = wait_key
+
+destroy_windows = destroyAllWindows = cv2.destroyAllWindows
+destroy_window = destroyWindow = cv2.destroyWindow

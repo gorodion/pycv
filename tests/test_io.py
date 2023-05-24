@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import cv3
+from PIL import Image
 from pathlib import Path
 import os
 import shutil
@@ -149,7 +150,7 @@ def test_imwrite_mkdir():
     shutil.rmtree(TMP_DIR, ignore_errors=True)
     out_path = os.path.join(TMP_DIR, OUT_PATH_IMG)
 
-    cv3.imwrite(out_path, test_img)
+    cv3.imwrite(out_path, test_img, mkdir=True)
     assert os.path.isfile(out_path)
     shutil.rmtree(TMP_DIR)
 
@@ -160,7 +161,7 @@ def test_imwrite_nomkdir():
     out_path = os.path.join(TMP_DIR, OUT_PATH_IMG)
 
     with pytest.raises(OSError):
-        cv3.imwrite(out_path, test_img, mkdir=False)
+        cv3.imwrite(out_path, test_img)
 
 
 def test_imwrite_invalid_extension():
@@ -218,6 +219,13 @@ def test_imshow_window():
         pass
 
 
+def test_imshow_pil():
+    pil_img = Image.open(TEST_IMG)
+    with cv3.Window('PIL Image') as w:
+        w.imshow(pil_img)
+        w.wait_key(2000)
+
+
 def test_imshow_window_pos():
     with (
         cv3.Window('pos 0,0', pos=(0,0)) as w1,
@@ -229,10 +237,19 @@ def test_imshow_window_pos():
         cv3.wait_key(2000)
 
 
+def test_window_move():
+    secs = 2
+    with cv3.Window(f'Move in {secs} secs', pos=(0,0)) as w:
+        w.imshow(test_img)
+        w.wait_key(secs * 1000)
+        w.move(100, 100)
+        w.wait_key(secs * 1000)
+
+
 def test_imshow_window_noname():
     w1 = cv3.Window(pos=(0,0))
     w2 = cv3.Window(pos=(100,100))
-    w3 = cv3.Window('other windows with no name', pos=(200,200))
+    w3 = cv3.Window('another window without name', pos=(200,200))
     for w in w1, w2, w3:
         w.imshow(test_img)
     cv3.wait_key(2000)

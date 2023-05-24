@@ -3,13 +3,12 @@ import numpy as np
 
 RGB = True
 FPS = 30
-FOURCC = 'MP4V'
+FOURCC = 'mp4v'
 THICKNESS = 1
 COLOR = 255
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 SCALE = 1
 PT_RADIUS = 1
-LINE_TYPE = cv2.LINE_AA
 
 def set_rgb():
     global RGB

@@ -246,9 +246,8 @@ def test_writer_fps():
 
 def test_writer_write2closed():
     # writing not started
-    with pytest.raises(OSError):
-        with cv3.Video(OUT_PATH_VID, 'w') as out:
-            pass
+    with cv3.Video(OUT_PATH_VID, 'w') as out:
+        pass
 
     # writing started once
     with cv3.Video(OUT_PATH_VID, 'w') as out:
@@ -267,7 +266,7 @@ def tmpdir_fixture():
 @pytest.mark.usefixtures('tmpdir_fixture')
 def test_writer_mkdir():
     out_path = os.path.join(TMP_DIR, OUT_PATH_VID)
-    with cv3.Video(out_path, 'w') as out:
+    with cv3.Video(out_path, 'w', mkdir=True) as out:
         out.write(frame)
     assert os.path.isfile(out_path)
 
@@ -275,6 +274,6 @@ def test_writer_mkdir():
 @pytest.mark.usefixtures('tmpdir_fixture')
 def test_writer_nomkdir():
     out_path = os.path.join(TMP_DIR, OUT_PATH_VID)
-    with cv3.Video(out_path, 'w', mkdir=False) as out:
+    with cv3.Video(out_path, 'w') as out:
         with pytest.raises(OSError):
             out.write(frame)

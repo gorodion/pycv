@@ -3,29 +3,20 @@ import numpy as np
 from functools import partial
 import warnings
 
-from ._utils import type_decorator, _relative_handle, _process_color, _handle_rect_coords
+from ._utils import type_decorator, _relative_check, _relative_handle, _process_color, _handle_rect_coords
 from .utils import xywh2xyxy, ccwh2xyxy, yyxx2xyxy
 
 __all__ = [
-    'vflip',
-    'hflip',
-    'dflip',
+    'vflip', 'hflip', 'dflip',
     'transform',
-    'rotate',
+    'rotate', 'rotate90', 'rotate180', 'rotate270',
     'scale',
-    'translate',
+    'shift', 'translate',
+    'xshift', 'xtranslate',
+    'yshift', 'ytranslate',
     'resize',
-    'shift',
-    'rotate90',
-    'rotate180',
-    'rotate270',
-    'xtranslate',
-    'xshift',
-    'ytranslate',
-    'yshift',
     'crop',
-    'copyMakeBorder',
-    'pad'
+    'pad', 'copyMakeBorder',
 ]
 
 _INTER_DICT = {
@@ -84,46 +75,53 @@ def dflip(img):
 
 
 @type_decorator
-def transform(img, angle, scale, interpolation=cv2.INTER_LINEAR, border=cv2.BORDER_CONSTANT, value=None):
-    if isinstance(interpolation, str):
-        interpolation = _inter_flag_match(interpolation)
+def transform(img, angle, scale, inter=cv2.INTER_LINEAR, border=cv2.BORDER_CONSTANT, value=None):
+    if isinstance(inter, str):
+        inter = _inter_flag_match(inter)
     border, value = _border_value_check(border, value)
-    img_center = tuple(np.array(img.shape[1::-1]) / 2)
-    rot_mat = cv2.getRotationMatrix2D(img_center, angle, scale)
-    result = cv2.warpAffine(img, rot_mat, img.shape[1::-1], flags=interpolation, borderMode=border, borderValue=value)
+    rot_mat = cv2.getRotationMatrix2D((img.shape[1] / 2, img.shape[0] / 2), angle, scale)
+    result = cv2.warpAffine(img, rot_mat, img.shape[1::-1], flags=inter, borderMode=border, borderValue=value)
     return result
 
 
-def rotate(img, angle, interpolation=cv2.INTER_LINEAR, border=cv2.BORDER_CONSTANT, value=None):
-    return transform(img, angle, 1, interpolation=interpolation, border=border, value=value)
+def rotate(img, angle, inter=cv2.INTER_LINEAR, border=cv2.BORDER_CONSTANT, value=None):
+    return transform(img, angle, 1, inter=inter, border=border, value=value)
 
 
-def scale(img, factor, interpolation=cv2.INTER_LINEAR, border=cv2.BORDER_CONSTANT, value=None):
-    return transform(img, 0, factor, interpolation=interpolation, border=border, value=value)
+def scale(img, factor, inter=cv2.INTER_LINEAR, border=cv2.BORDER_CONSTANT, value=None):
+    return transform(img, 0, factor, inter=inter, border=border, value=value)
 
 @type_decorator
-def translate(img, x, y):
+def shift(img, x, y, border=cv2.BORDER_CONSTANT, value=None, rel=None):
+    x, y = _relative_handle(img, x, y, rel=rel)
     transMat = np.float32([[1, 0, x], [0, 1, y]])
     dimensions = (img.shape[1], img.shape[0])
-    return cv2.warpAffine(img, transMat, dimensions)
+    border, value = _border_value_check(border, value)
+    return cv2.warpAffine(img, transMat, dimensions, borderMode=border, borderValue=value)
 
 
-def xtranslate(img, x):
-    return translate(img, x, 0)
+def xshift(img, x, border=cv2.BORDER_CONSTANT, value=None, rel=None):
+    h, w = img.shape[:2]
+    x = round(x * w if _relative_check(x, rel=rel) else x)
+    return translate(img, x, 0, border=border, value=value)
 
 
-def ytranslate(img, y):
-    return translate(img, 0, y)
+def yshift(img, y, border=cv2.BORDER_CONSTANT, value=None, rel=None):
+    h, w = img.shape[:2]
+    y = round(y * h if _relative_check(y, rel=rel) else y)
+    return translate(img, 0, y, border=border, value=value)
 
 
 @type_decorator
-def resize(img, width, height, interpolation=cv2.INTER_LINEAR, rel=None):
-    if isinstance(interpolation, str):
-        interpolation = _inter_flag_match(interpolation)
+def resize(img, width, height, inter=cv2.INTER_LINEAR, rel=None):
+    if isinstance(inter, str):
+        inter = _inter_flag_match(inter)
     width, height = _relative_handle(img, width, height, rel=rel)
-    if not rel and (width == 0 or height == 0):
-        raise ValueError('Width or height have zero size. If relative coords passed set `rel` to True')
-    return cv2.resize(img, (width, height), interpolation=interpolation)
+    if width == 0 or height == 0:
+        if not rel:
+            warnings.warn('Try to set `rel` to True')
+        raise ValueError('Width or height have zero size')
+    return cv2.resize(img, (width, height), interpolation=inter)
 
 
 @type_decorator
@@ -133,28 +131,29 @@ def crop(img, x0, y0, x1, y1, mode='xyxy', rel=None):
     """
     x0, y0, x1, y1 = _handle_rect_coords(img, x0, y0, x1, y1, mode=mode, rel=rel)
 
+    x0, x1 = min(x0, x1), max(x0, x1)
+    y0, y1 = min(y0, y1), max(y0, y1)
+
     x0 = max(x0, 0)
     y0 = max(y0, 0)
 
-    if y0 > y1 or x0 > x1:
-        raise ValueError('invalid rectangle coords specified (ymin>ymax or xmin>xmax)')
-
-    if not rel and (y1 == y0 or x1 == x0):
-        warnings.warn('zero-size array. If relative coords passed set `rel` to True')
+    if y1 == y0 or x1 == x0:
+        if not rel:
+            warnings.warn('zero-size array. Try to set `rel` to True')
     return img[y0:y1, x0:x1].copy()
 
 
 @type_decorator
-def copyMakeBorder(img, y0, y1, x0, x1, border=cv2.BORDER_CONSTANT, value=None, rel=None):
+def pad(img, y0, y1, x0, x1, border=cv2.BORDER_CONSTANT, value=None, rel=None):
     border, value = _border_value_check(border, value)
     x0, y0, x1, y1 = _relative_handle(img, x0, y0, x1, y1, rel=rel)
-    return cv2.copyMakeBorder(img, y0, y1, x0, x1, borderType=border, dst=None, value=value)
+    return cv2.copyMakeBorder(img, y0, y1, x0, x1, borderType=border, value=value)
 
 
-shift = translate
-xshift = xtranslate
-yshift = ytranslate
+translate = shift
+xtranslate = xshift
+ytranslate = yshift
 rotate90 = partial(rotate, angle=90)
 rotate180 = partial(rotate, angle=180)
 rotate270 = partial(rotate, angle=270)
-pad = copyMakeBorder
+copyMakeBorder = pad

@@ -19,10 +19,10 @@ __all__ = [
 
 class VideoInterface:
     stream = None
+    width = None
+    height = None
 
     def isOpened(self):
-        if self.stream is None:
-            return False
         return self.stream.isOpened()
 
     @property
@@ -30,9 +30,11 @@ class VideoInterface:
         return self.isOpened()
 
     def release(self):
-        if self.stream is None:
-            raise OSError('Stream not started')
         self.stream.release()
+
+    @property
+    def shape(self):
+        return self.width, self.height
 
     def __enter__(self):
         return self
@@ -60,7 +62,6 @@ class VideoCapture(VideoInterface):
         self.fps = round(self.stream.get(cv2.CAP_PROP_FPS))
         self.width = round(self.stream.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.height = round(self.stream.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        self.shape = self.width, self.height
 
     @property
     def now(self):  # current frame
@@ -106,7 +107,7 @@ class VideoCapture(VideoInterface):
 
 
 class VideoWriter(VideoInterface):
-    def __init__(self, save_path, fps=None, fourcc=None, mkdir=True):
+    def __init__(self, save_path, fps=None, fourcc=None, mkdir=False):
         if mkdir:
             Path(save_path).parent.mkdir(parents=True, exist_ok=True)
         if isinstance(save_path, Path):
@@ -121,9 +122,16 @@ class VideoWriter(VideoInterface):
         self.fourcc = fourcc
         self.stream = None
 
-    @property
-    def shape(self):
-        return self.width, self.height
+    def isOpened(self):
+        if self.stream is None:
+            return False
+        return super().isOpened()
+
+    def release(self):
+        if self.stream is None:
+            warnings.warn("Stream not started")
+            return
+        super().release()
 
     def write(self, frame: np.ndarray):
         frame = typeit(frame)
@@ -145,7 +153,7 @@ def Video(path, mode='r', **kwds):
     if mode == 'r':
         if kwds:
             raise TypeError(
-                "VideoCapture not accepts keyword args. If you need VideoWriter then pass mode='w'"
+                "VideoCapture doesn't accept keyword args. If you need VideoWriter then pass mode='w'"
             )
         return VideoCapture(path)
     elif mode == 'w':

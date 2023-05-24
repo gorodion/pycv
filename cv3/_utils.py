@@ -25,13 +25,16 @@ def _process_color(color):
     if color is None:
         color = opt.COLOR
     if isinstance(color, str):
-        assert color in COLORS_DICT, f'No such color: {color}. Available colors: {list(COLORS_DICT.keys())}'
-        color = COLORS_DICT[color]
-    if isinstance(color, (int, np.unsignedinteger)):
-        return int(color)
-    if isinstance(color, (float, np.floating)):
+        assert color in COLORS_RGB_DICT, f'No such color: {color}. Available colors: {list(COLORS_RGB_DICT.keys())}'
+        color = COLORS_RGB_DICT[color]
+        if not opt.RGB:
+            color = color[::-1]
+    if isinstance(color, (int, np.unsignedinteger, float, np.floating)):
         assert 0 <= color <= 255, 'if `color` passed as number it should be in range [0, 255]'
-        color = (color, 0., 0.)
+        if isinstance(color, (int, np.unsignedinteger)):
+            color = int(color), 0, 0
+        if isinstance(color, (float, np.floating)):
+            color = color, 0., 0.
     if isinstance(color, np.ndarray):
         color = color.ravel().tolist()
     if isinstance(color, (list, tuple)):
@@ -41,7 +44,7 @@ def _process_color(color):
             assert all(0 <= c <= 255 for c in color), '`color` must be in range [0, 255]'
             color = tuple(map(round, color))
     else:
-        raise ValueError('Unexpected type of `color` arg (int, float, np.array, list, tuple supported)')
+        raise ValueError('Unexpected type of `color` arg (int, float, str, np.array, list, tuple supported)')
     return color
 
 
@@ -58,7 +61,7 @@ def _relative_handle(img, *args, rel):
     if _relative_check(*args, rel=rel):
         h, w = img.shape[:2]
         return tuple(rel2abs(*args, width=w, height=h))
-    return tuple(map(int, args))
+    return tuple(map(round, args))
 
 
 def _handle_rect_mode(mode, x0, y0, x1, y1):
@@ -80,7 +83,7 @@ def _handle_rect_coords(img, x0, y0, x1, y1, mode='xyxy', rel=None):
 
 
 # https://www.rapidtables.com/web/color/RGB_Color.html
-COLORS_DICT = {
+COLORS_RGB_DICT = {
     'maroon': (128, 0, 0),
     'darkred': (139, 0, 0),
     'brown': (165, 42, 42),

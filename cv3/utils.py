@@ -5,7 +5,6 @@ def xywh2xyxy(x0, y0, w, h):
 
 
 def xyxy2xywh(x0, y0, x1, y1):
-    assert x1 >= x0 and y1 >= y0
     w = x1 - x0
     h = y1 - y0
     return x0, y0, w, h
@@ -20,13 +19,16 @@ def ccwh2xyxy(xc, yc, w, h):
 
 
 def xyxy2ccwh(x0, y0, x1, y1):
-    assert x1 >= x0 and y1 >= y0
     cx = (x0 + x1) / 2
     cy = (y0 + y1) / 2
-    w = x1 - x0
-    h = y1 - y0
+    w = abs(x1 - x0)
+    h = abs(y1 - y0)
     return cx, cy, w, h
 
+
+def yyxx2xyxy(y0, y1, x0, x1):
+    # ¯\_(ツ)_/¯
+    return x0, y0, x1, y1
 
 def rel2abs(*coords, width, height):
     '''
@@ -38,8 +40,8 @@ def rel2abs(*coords, width, height):
     '''
     assert len(coords) % 2 == 0
     for x, y in zip(*[iter(coords)] * 2):
-        yield int(x * width)
-        yield int(y * height)
+        yield round(x * width)
+        yield round(y * height)
 
 
 def abs2rel(*coords, width, height):

@@ -16,4 +16,9 @@ You can get acquainted with the features in [demo.ipynb](https://github.com/goro
 
 [demo.ipynb](https://github.com/gorodion/pycv/blob/main/demo.ipynb)
 
+## Run tests
+```python
+pytest -v
+```
+---
 I hope this is helpful, please contribute 🙂

@@ -13,6 +13,7 @@ __all__ = [
     'imwrite',
     'imshow',
     'Window',
+    'Windows',
     'wait_key', 'waitKey',
     'destroy_windows', 'destroyAllWindows',
     'destroy_window', 'destroyWindow'
@@ -122,7 +123,34 @@ class Window:
         self.close()
 
 
+class Windows:
+    def __init__(self, window_names, poses=None):
+        if poses is None:
+            poses = (None,) * len(window_names)
+
+        self.windows = {}
+        for window_name, pos in zip(window_names, poses):
+            self.windows[window_name] = Window(window_name, pos=pos)
+
+    def __getitem__(self, name):
+        return self.windows[name]
+
+    def close(self):
+        for window_name in self.windows:
+            self.windows[window_name].close()
+
+    @staticmethod
+    def wait_key(t):
+        return wait_key(t)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
 waitKey = wait_key
 
 destroy_windows = destroyAllWindows = cv2.destroyAllWindows
 destroy_window = destroyWindow = cv2.destroyWindow
+

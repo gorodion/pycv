@@ -1,4 +1,4 @@
-# pycv: Pythonic OpenCV to speed up your computer vision research
+# cv3: Pythonic OpenCV to speed up your computer vision research
 
 ## Principles
 - Solve more important tasks than writing extra code

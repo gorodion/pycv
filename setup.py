@@ -5,7 +5,7 @@ setup(
     version='1.2.0',
     packages=['cv3'],
     url='https://github.com/gorodion/pycv',
-    license='MIT License',
+    license='Apache 2.0',
     author='gorodion',
     author_email='gorodion@bk.ru',
     description='Pythonic cv2',

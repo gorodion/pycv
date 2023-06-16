@@ -1,0 +1,6 @@
+pytest
+numpy
+opencv-python
+Pillow
+pathlib
+matplotlib

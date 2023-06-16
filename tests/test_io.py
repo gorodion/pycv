@@ -188,3 +188,4 @@ def test_imread_imwrite_rgb():
     img = cv3.imread(OUT_PATH_IMG)
     assert np.array_equal(img, test_img)
     os.unlink(OUT_PATH_IMG)
+

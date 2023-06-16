@@ -6,6 +6,7 @@ from pathlib import Path
 import os
 import shutil
 import pytest
+import time
 
 # NOTE: RGB==True by default
 
@@ -267,8 +268,12 @@ def test_imshow_window_bgr():
 
 
 def test_specific_wait_key():
+    start = time.time()
     with cv3.Window('Exit on `q` only') as w:
         w.imshow(test_img)
         while True:
-            if w.wait_key(0) == ord('q'):
+            if w.wait_key(1) == ord('q'):
+                break
+            # break if nothing happens for 3 seconds
+            if time.time() - start > 3:
                 break

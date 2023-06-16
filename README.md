@@ -12,7 +12,7 @@ You can get acquainted with the features in [demo.ipynb](https://github.com/goro
 - Forget to copy the same code over and over (like cv2.getRotationMatrix2D or cv2.VideoWriter_fourcc(*'MP4V'))
 
 ## Quick start
-`pip install git+https://github.com/gorodion/pycv.git`
+`pip install git+https://github.com/gorodion/cv3.git`
 
 [demo.ipynb](https://github.com/gorodion/pycv/blob/main/demo.ipynb)
 

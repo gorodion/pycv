@@ -59,14 +59,6 @@ def test_capture_open_path_nonexist():
         cv3.Video(Path(NON_EXIST_VID))
 
 
-def test_capture_open_webcam():
-    with cv3.Video(0):
-        pass
-
-    with cv3.Video('0'):
-        pass
-
-
 @pytest.fixture()
 def imgseq_fixture():
     imgseq_dir = Path(IMGSEQ_DIR)

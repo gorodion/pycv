@@ -7,7 +7,7 @@ setup(
     url='https://github.com/gorodion/pycv',
     license='Apache 2.0',
     author='gorodion',
-    author_email='gorodion@bk.ru',
+    author_email='domonion@list.ru',
     description='Pythonic cv2',
     install_requires=[
         'numpy>=1.19.5',

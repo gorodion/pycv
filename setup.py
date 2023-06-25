@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='pycv',
-    version='1.2.0',
+    version='1.2.1',
     packages=['cv3'],
     url='https://github.com/gorodion/pycv',
     license='Apache 2.0',

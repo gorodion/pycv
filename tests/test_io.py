@@ -14,6 +14,8 @@ TEST_IMG = 'img.jpeg'
 TEST_ALPHA_IMG = 'parrot.webp'
 NON_EXIST_IMG = 'spamimage.jpg'
 OUT_PATH_IMG = 'img_out.png'
+UTF8_PATH = 'попугай.png'
+INVALID_UTF8_PATH = 'попугай.txt'
 INVALID_EXT_PATH = 'spam.pngxxx'
 TMP_DIR = 'temp/'
 TESTS_DIR = 'tests'
@@ -88,7 +90,7 @@ def test_imread_unchanged():
     "Testing different cv3.imread flags"
     img0 = cv2.imread(TEST_ALPHA_IMG, cv2.IMREAD_UNCHANGED)
     img0 = cv2.cvtColor(img0, cv2.COLOR_BGRA2RGBA)
-    img1 = cv3.imread(TEST_ALPHA_IMG, 'alpha')
+    img1 = cv3.imread(TEST_ALPHA_IMG, 'unchanged')
 
     assert img1.ndim == 3 and img1.shape[-1] == 4
     assert np.array_equal(img0, img1)
@@ -97,10 +99,53 @@ def test_imread_unchanged():
     try:
         cv3.opt.set_bgr()
         img0 = cv2.imread(TEST_ALPHA_IMG, cv2.IMREAD_UNCHANGED)
-        img1 = cv3.imread(TEST_ALPHA_IMG, 'alpha')
+        img1 = cv3.imread(TEST_ALPHA_IMG, 'unchanged')
         assert np.array_equal(img0, img1)
     finally:
         cv3.opt.set_rgb()
+
+
+def test_imread_utf8_notfound():
+    with pytest.raises(FileNotFoundError):
+        cv3.imread(UTF8_PATH)
+
+@pytest.fixture()
+def utf8_fixture():
+    shutil.copy(TEST_IMG, UTF8_PATH)
+    yield
+    Path(UTF8_PATH).unlink()
+
+
+@pytest.mark.usefixtures('utf8_fixture')
+def test_imread_utf8():
+    assert np.array_equal(
+        cv3.imread(UTF8_PATH),
+        test_img
+    )
+
+    # bgr
+    try:
+        cv3.opt.set_bgr()
+        assert np.array_equal(
+            cv3.imread(UTF8_PATH),
+            test_img_bgr
+        )
+    finally:
+        cv3.opt.set_rgb()
+
+
+@pytest.fixture()
+def utf8_invalid_fixture():
+    with open(INVALID_UTF8_PATH, 'wb') as f:
+        f.write(b'aabcsdfedjkjkcdnsj')
+    yield
+    Path(INVALID_UTF8_PATH).unlink()
+
+
+@pytest.mark.usefixtures('utf8_invalid_fixture')
+def test_imread_utf8_invalid():
+    with pytest.raises(OSError):
+        cv3.imread(INVALID_UTF8_PATH)
 
 
 def test_imwrite_str():
@@ -169,6 +214,22 @@ def test_imwrite_invalid_extension():
     "Testing writing with unknown extensions"
     with pytest.raises(cv2.error):
         cv3.imwrite(INVALID_EXT_PATH, test_img)
+
+@pytest.fixture()
+def write_utf8_fixture():
+    Path(UTF8_PATH).unlink(missing_ok=True)
+    yield
+    Path(UTF8_PATH).unlink(missing_ok=True)
+
+
+@pytest.mark.usefixtures('write_utf8_fixture')
+def test_imwrite_utf8():
+    cv3.imwrite(UTF8_PATH, test_img, ascii=False)
+    assert Path(UTF8_PATH).is_file()
+    assert np.array_equal(
+        cv3.imread(UTF8_PATH),
+        test_img
+    )
 
 
 def test_imread_imwrite_rgb():

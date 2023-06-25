@@ -1,6 +1,6 @@
 from itertools import cycle
 from pathlib import Path
-
+import warnings
 import cv2
 import numpy as np
 
@@ -10,6 +10,7 @@ from ._utils import typeit, type_decorator
 
 __all__ = [
     'imread',
+    'imdecode',
     'imwrite',
     'imshow',
     'Window',
@@ -19,30 +20,45 @@ __all__ = [
     'destroy_window', 'destroyWindow'
 ]
 
-
 def _imread_flag_match(flag):
-    assert flag in ('color', 'gray', 'alpha')
+    assert flag in ('color', 'gray', 'alpha', 'unchanged')
     if flag == 'color':
         flag = cv2.IMREAD_COLOR
     elif flag == 'gray':
         flag = cv2.IMREAD_GRAYSCALE
+    elif flag == 'unchanged':
+        flag = cv2.IMREAD_UNCHANGED
     elif flag == 'alpha':
+        warnings.warn('Flag name "alpha" deprecated. Please use "unchanged"')
         flag = cv2.IMREAD_UNCHANGED
     return flag
 
 
-def imread(imgp, flag=cv2.IMREAD_COLOR):
-    if Path(imgp).is_dir():
-        raise IsADirectoryError(str(imgp))
-    if not Path(imgp).is_file():
-        raise FileNotFoundError(str(imgp))
-    if isinstance(imgp, Path):
-        imgp = str(imgp)
+
+def is_ascii(s):
+    return all(ord(c) < 128 for c in s)
+
+def imdecode(buf, flag):
     if isinstance(flag, str):
         flag = _imread_flag_match(flag)
-    img = cv2.imread(imgp, flag)
+    img = cv2.imdecode(buf, flag)
+    return img
+
+def imread(img_path, flag=cv2.IMREAD_COLOR):
+    if Path(img_path).is_dir():
+        raise IsADirectoryError(str(img_path))
+    if not Path(img_path).is_file():
+        raise FileNotFoundError(str(img_path))
+    if isinstance(img_path, Path):
+        img_path = str(img_path)
+    if isinstance(flag, str):
+        flag = _imread_flag_match(flag)
+    img = cv2.imread(img_path, flag)
     if img is None:
-        raise OSError(f'File was not read: {imgp}')
+        if not is_ascii(img_path):
+            img = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8), flag)
+        if img is None:
+            raise OSError(f'File was not read: {img_path}')
     if img.ndim == 2:
         return img
     if opt.RGB:
@@ -53,16 +69,27 @@ def imread(imgp, flag=cv2.IMREAD_COLOR):
     return img
 
 
-def imwrite(imgp, img, mkdir=False):
+def imwrite(img_path, img, mkdir=False, ascii=True):
     if mkdir:
-        Path(imgp).parent.mkdir(parents=True, exist_ok=True)
-    if isinstance(imgp, Path):
-        imgp = str(imgp)
+        Path(img_path).parent.mkdir(parents=True, exist_ok=True)
+    if isinstance(img_path, Path):
+        img_path = str(img_path)
     if opt.RGB:
         img = rgb(img)  # includes typeit
     else:
         img = typeit(img)
-    ret = cv2.imwrite(imgp, img)
+
+    if not ascii:
+        # if is_ascii(img_path):
+        #     warnings.warn('Passed ascii filename but `ascii`=True')
+        ext = Path(img_path).suffix
+        ret2, buf = cv2.imencode(ext=ext, img=img)
+        if not ret2:
+            raise OSError('Something went wrong when writing image (non-ascii filename)')
+        buf.tofile(img_path)
+        return
+
+    ret = cv2.imwrite(img_path, img)
     if not ret:
         raise OSError('Something went wrong when writing image')
 
